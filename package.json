@@ -1,6 +1,6 @@
 {
   "name": "legalworld-frontend-v2",
-  "version": "2.1.147",
+  "version": "2.1.157",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,6 +14,8 @@
     "test:case-picker-art": "node tests/case-picker-art.test.mjs",
     "test:case-picker-mode": "node tests/case-picker-mode.test.mjs",
     "test:case-picker-filter": "node tests/case-picker-filter.test.mjs",
+    "test:case-list-lazy-load": "node tests/case-list-lazy-load.test.mjs",
+    "test:login-fast-path": "node tests/login-fast-path.test.mjs",
     "test:case-art-pool": "node tests/case-art-pool-assets.test.mjs",
     "test:case-art-api-meta": "node tests/case-art-api-meta.test.mjs",
     "test:case-art-resolver": "node tests/case-art-resolver.test.mjs",

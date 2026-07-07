@@ -184,6 +184,12 @@ export function CasePicker({
           </div>
         )}
         <div className="case-list">
+          {loading && !cases.length && (
+            <div className="case-list-loading" role="status">
+              <strong>正在读取案件索引</strong>
+              <span>案件目录会在这里自动出现，可以先停留片刻。</span>
+            </div>
+          )}
           {filteredCases.map((item) => {
             const active = item.caseId === selectedCaseId;
             const art = getCaseArtProfile(item.caseId);
@@ -195,7 +201,13 @@ export function CasePicker({
                 onClick={() => onSelect(item.caseId)}
                 type="button"
               >
-                <img className="case-card-preview" src={art.caseCg} alt={`${item.title}案件预览`} />
+                <img
+                  className="case-card-preview"
+                  src={art.caseCg}
+                  alt={`${item.title}案件预览`}
+                  decoding="async"
+                  loading="lazy"
+                />
                 <strong>{item.title}</strong>
                 <span>{item.plaintiffName} 诉 {item.defendantName}</span>
                 <small>{item.trainingCategory || item.rawCaseCause} / {item.difficulty}</small>

@@ -21,6 +21,23 @@ type Props = {
 
 type BootstrapState = 'checking' | 'authenticated' | 'unauthenticated' | 'offline';
 type UnauthenticatedView = 'landing' | 'login';
+const LOGOUT_PAUSE_TIMEOUT_MS = 1500;
+
+async function withLogoutTimeout<T>(operation: Promise<T>): Promise<T | null> {
+  let timeoutId: ReturnType<typeof window.setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<null>((resolve) => {
+        timeoutId = window.setTimeout(() => resolve(null), LOGOUT_PAUSE_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+}
 
 export function AuthGate({ children, ensureWorkspace = true }: Props) {
   const runtime = useMemo(() => getRuntimeMode(), []);
@@ -60,25 +77,28 @@ export function AuthGate({ children, ensureWorkspace = true }: Props) {
     }
   }
 
-  async function handleLogout(): Promise<void> {
-    try {
-      getWebSocketService().send({ type: 'client_logout' });
-      await pauseSimulation();
-    } catch (err) {
-      console.warn('Failed to pause sandbox before logout:', err);
-    }
-    authService.logout();
+  function showLoggedOutLanding(): void {
     setUser(null);
     setUnauthenticatedView('landing');
     setState(runtime.configured ? 'unauthenticated' : 'offline');
   }
 
+  async function handleLogout(): Promise<void> {
+    showLoggedOutLanding();
+    try {
+      getWebSocketService().send({ type: 'client_logout' });
+      await withLogoutTimeout(pauseSimulation());
+    } catch (err) {
+      console.warn('Failed to pause sandbox before logout:', err);
+    } finally {
+      authService.logout();
+    }
+  }
+
   useEffect(() => {
     void bootstrapAuthenticatedSession();
     const handleAuthLogout = () => {
-      setUser(null);
-      setUnauthenticatedView('landing');
-      setState(runtime.configured ? 'unauthenticated' : 'offline');
+      showLoggedOutLanding();
     };
     window.addEventListener(AUTH_LOGOUT_EVENT, handleAuthLogout);
     return () => window.removeEventListener(AUTH_LOGOUT_EVENT, handleAuthLogout);

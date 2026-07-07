@@ -1025,6 +1025,29 @@ h1 {
   text-align: left;
 }
 
+.case-list-loading {
+  grid-column: 1 / -1;
+  min-height: 180px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 222, 176, 0.18);
+  background: rgba(255, 241, 220, 0.06);
+  color: #dcc3a7;
+  text-align: center;
+}
+
+.case-list-loading strong {
+  color: #fff4df;
+  font-size: 15px;
+}
+
+.case-list-loading span {
+  color: #d9c1a4;
+  font-size: 12px;
+}
+
 .case-card.active {
   border-color: rgba(233, 188, 114, 0.64);
   background: rgba(233, 188, 114, 0.16);

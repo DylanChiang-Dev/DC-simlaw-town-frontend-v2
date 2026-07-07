@@ -12,8 +12,8 @@ const vnReducerSource = readFileSync(join(root, 'src', 'state', 'vnEventReducer.
 
 assert.match(
   appSource,
-  /usePlayerLawyerRuntime\(\s*auth\.backendConfigured && Boolean\(auth\.user\),\s*runtime\.activeCaseId,\s*\)/,
-  'Player-lawyer mode status should refresh after login even before a real active case is running or paused.',
+  /const playerLawyerEnabled = Boolean\([\s\S]*runtime\.activeCaseId[\s\S]*runtime\.simulation\?\.simulationMode === 'plaintiff'[\s\S]*\);[\s\S]*usePlayerLawyerRuntime\(\s*playerLawyerEnabled,\s*runtime\.activeCaseId,\s*\)/,
+  'Player-lawyer runtime should only refresh for the active plaintiff-player case.',
 );
 
 assert.doesNotMatch(
@@ -90,13 +90,13 @@ assert.doesNotMatch(
 
 assert.match(
   appSource,
-  /\['ws:scenario-start', \(payload\) => \{[\s\S]*setDialogueGate\(null\)[\s\S]*dispatchVnEvent\(\{ type: 'scenario-start', payload \}\)/,
+  /\['ws:scenario-start', \(payload\) => \{[\s\S]*setDialogueGate\(null\)[\s\S]*vnEventQueue\.enqueue\(\[\{ event: \{ type: 'scenario-start', payload \} \}\]\)/,
   'Starting a new scenario should clear any dialogue gate from the previous run.',
 );
 
 assert.match(
   appSource,
-  /async function handleStartSelectedCase\(caseId\?: string\): Promise<void> \{[\s\S]*setDialogueGate\(null\)[\s\S]*await runtime\.startSelectedCase\(caseId\)/,
+  /async function handleStartSelectedCase\(caseId\?: string, mode\?: SimulationMode\): Promise<void> \{[\s\S]*setDialogueGate\(null\)[\s\S]*await runtime\.startSelectedCase\(caseId, mode\)/,
   'Starting a selected case should clear stale dialogue gates before entering the new run.',
 );
 
@@ -108,8 +108,8 @@ assert.doesNotMatch(
 
 assert.match(
   appSource,
-  /async function handleRestartSimulation\(\): Promise<void> \{[\s\S]*setDialogueGate\(null\)[\s\S]*await runtime\.restart\(\);[\s\S]*dispatchVnEvent\(\{ type: 'runtime-reset' \}\)/,
-  'Restarting the simulation should clear stale dialogue gates and old VN history after the backend reset succeeds.',
+  /async function handleRestartSimulation\(\): Promise<void> \{[\s\S]*setDialogueGate\(null\)[\s\S]*getWebSocketService\(\)\.disconnect\(\);[\s\S]*await runtime\.restart\(\);[\s\S]*dispatchVnEvent\(\{ type: 'runtime-reset' \}\)/,
+  'Restarting the simulation should disconnect realtime first, clear stale dialogue gates, and clear old VN history after the backend reset succeeds.',
 );
 
 assert.match(

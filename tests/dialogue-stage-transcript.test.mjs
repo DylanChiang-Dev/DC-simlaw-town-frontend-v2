@@ -48,8 +48,8 @@ assert.match(
 
 assert.match(
   appSource,
-  /usePlayerLawyerRuntime\(\s*auth\.backendConfigured && Boolean\(auth\.user\),\s*runtime\.activeCaseId,\s*\)/,
-  'App should fetch player-lawyer mode status as soon as the user is connected, so the lifecycle perspective does not wait for an active case.',
+  /const playerLawyerEnabled = Boolean\([\s\S]*runtime\.activeCaseId[\s\S]*runtime\.simulation\?\.simulationMode === 'plaintiff'[\s\S]*\);[\s\S]*usePlayerLawyerRuntime\(\s*playerLawyerEnabled,\s*runtime\.activeCaseId,\s*\)/,
+  'App should fetch player-lawyer runtime only for an active plaintiff-player case.',
 );
 
 assert.match(

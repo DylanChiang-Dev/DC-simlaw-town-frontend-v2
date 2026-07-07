@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchSandboxCases,
   fetchSimulationStatus,
@@ -10,10 +10,12 @@ import type { SandboxCaseSummary, SimulationMode, SimulationStatus } from '../se
 export type SimulationRuntimeState = {
   activeCaseId: string;
   cases: SandboxCaseSummary[];
+  casesLoading: boolean;
   error: string;
   loading: boolean;
   selectedCaseId: string;
   simulation: SimulationStatus | null;
+  loadCases: () => Promise<void>;
   refresh: () => Promise<void>;
   selectCase: (caseId: string) => void;
   startSelectedCase: (caseId?: string, mode?: SimulationMode) => Promise<void>;
@@ -39,23 +41,39 @@ function resolveSelectedCaseId(
 
 export function useSimulationRuntime(enabled: boolean): SimulationRuntimeState {
   const [cases, setCases] = useState<SandboxCaseSummary[]>([]);
+  const [casesLoading, setCasesLoading] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState('');
   const [simulation, setSimulation] = useState<SimulationStatus | null>(null);
+  const casesRef = useRef<SandboxCaseSummary[]>([]);
+  const simulationRef = useRef<SimulationStatus | null>(null);
+  casesRef.current = cases;
+  simulationRef.current = simulation;
+
+  const loadCases = useCallback(async () => {
+    if (!enabled) return;
+    setCasesLoading(true);
+    setError('');
+    try {
+      const nextCases = await fetchSandboxCases();
+      setCases(nextCases);
+      setSelectedCaseId((current) => resolveSelectedCaseId(current, simulationRef.current, nextCases));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '读取案件列表失败');
+    } finally {
+      setCasesLoading(false);
+    }
+  }, [enabled]);
 
   const refresh = useCallback(async () => {
     if (!enabled) return;
     setLoading(true);
     setError('');
     try {
-      const [nextSimulation, nextCases] = await Promise.all([
-        fetchSimulationStatus(),
-        fetchSandboxCases(),
-      ]);
+      const nextSimulation = await fetchSimulationStatus();
       setSimulation(nextSimulation);
-      setCases(nextCases);
-      setSelectedCaseId((current) => resolveSelectedCaseId(current, nextSimulation, nextCases));
+      setSelectedCaseId((current) => resolveSelectedCaseId(current, nextSimulation, casesRef.current));
     } catch (err) {
       setError(err instanceof Error ? err.message : '读取案件运行状态失败');
     } finally {
@@ -99,10 +117,12 @@ export function useSimulationRuntime(enabled: boolean): SimulationRuntimeState {
   return {
     activeCaseId,
     cases,
+    casesLoading,
     error,
     loading,
     selectedCaseId,
     simulation,
+    loadCases,
     refresh,
     selectCase: setSelectedCaseId,
     startSelectedCase: async (caseId?: string, mode?: SimulationMode) => {

@@ -92,8 +92,14 @@ function AppShell({ auth }: AppShellProps) {
   const [autoNextEnabled, setAutoNextEnabled] = useState(() => readAutoNextPreference());
   const onboarding = useOnboardingState();
   const runtime = useSimulationRuntime(auth.backendConfigured && Boolean(auth.user));
+  const playerLawyerEnabled = Boolean(
+    auth.backendConfigured
+    && auth.user
+    && runtime.activeCaseId
+    && runtime.simulation?.simulationMode === 'plaintiff',
+  );
   const playerLawyer = usePlayerLawyerRuntime(
-    auth.backendConfigured && Boolean(auth.user),
+    playerLawyerEnabled,
     runtime.activeCaseId,
   );
   const [vnRuntime, dispatchVnEvent] = useReducer(vnEventReducer, undefined, createInitialVnRuntimeState);
@@ -171,6 +177,28 @@ function AppShell({ auth }: AppShellProps) {
   const activeDocumentSkill = activePlayerRequest
     ? findDocumentSkillForStage(documentSkills, activePlayerRequest.stage)
     : null;
+
+  useEffect(() => {
+    if (entryView !== 'preset') return;
+    void runtime.loadCases();
+  }, [entryView, runtime.loadCases]);
+
+  useEffect(() => {
+    if (!casePickerOpen || entryView !== 'landing') return;
+    if (runtime.cases.length || runtime.casesLoading || runtime.loading || runtime.error) return;
+    const timeoutId = window.setTimeout(() => {
+      void runtime.loadCases();
+    }, 350);
+    return () => window.clearTimeout(timeoutId);
+  }, [
+    casePickerOpen,
+    entryView,
+    runtime.cases.length,
+    runtime.casesLoading,
+    runtime.loading,
+    runtime.error,
+    runtime.loadCases,
+  ]);
 
   useEffect(() => {
     if (!auth.backendConfigured || !auth.user) return;
@@ -270,7 +298,7 @@ function AppShell({ auth }: AppShellProps) {
   }, [activePlayerRequest?.requestId, activePlayerRequest?.stage]);
 
   useEffect(() => {
-    if (!auth.backendConfigured || !auth.user) {
+    if (!auth.backendConfigured || !auth.user || !runtime.activeCaseId) {
       getWebSocketService().disconnect();
       return;
     }
@@ -373,7 +401,7 @@ function AppShell({ auth }: AppShellProps) {
       getWebSocketService().disconnect();
       vnEventQueue.clear();
     };
-  }, [auth.backendConfigured, auth.user, vnEventQueue]);
+  }, [auth.backendConfigured, auth.user, runtime.activeCaseId, vnEventQueue]);
 
   async function handleStartSelectedCase(caseId?: string, mode?: SimulationMode): Promise<void> {
     vnEventQueue.clear();
@@ -404,6 +432,7 @@ function AppShell({ auth }: AppShellProps) {
     setAcknowledgedDialogueEntryId('');
     setClosingSummaryOpen(false);
     setClosingSummaryEntryId('');
+    getWebSocketService().disconnect();
     await runtime.restart();
     dispatchVnEvent({ type: 'runtime-reset' });
   }
@@ -600,9 +629,9 @@ function AppShell({ auth }: AppShellProps) {
           cases={presetCases}
           disabled={!auth.user}
           error={runtime.error}
-          loading={runtime.loading}
+          loading={runtime.casesLoading || runtime.loading}
           onBack={() => setEntryView('landing')}
-          onRefresh={runtime.refresh}
+          onRefresh={runtime.loadCases}
           onSelect={runtime.selectCase}
           onOpenHumanEval={() => {
             window.location.assign('/human-eval');

@@ -20,12 +20,18 @@ assert.match(
 
 assert.match(
   authGateSource,
-  /async function handleLogout\(\): Promise<void> \{[\s\S]*getWebSocketService\(\)\.send\(\{ type: 'client_logout' \}\);[\s\S]*await pauseSimulation\(\);[\s\S]*authService\.logout\(\);/,
-  'Logout should notify realtime clients and await sandbox pause before authService.logout clears the bearer token.',
+  /async function handleLogout\(\): Promise<void> \{[\s\S]*showLoggedOutLanding\(\);[\s\S]*getWebSocketService\(\)\.send\(\{ type: 'client_logout' \}\);[\s\S]*await withLogoutTimeout\(pauseSimulation\(\)\);[\s\S]*authService\.logout\(\);/,
+  'Logout should switch to the landing page immediately, then pause the sandbox before authService.logout clears the bearer token.',
 );
 
 assert.match(
   authGateSource,
-  /catch \(err\) \{[\s\S]*console\.warn\('Failed to pause sandbox before logout:', err\);[\s\S]*\}[\s\S]*authService\.logout\(\);/,
-  'A pause failure should not trap the user in the app, but it should be visible in developer logs.',
+  /finally \{[\s\S]*authService\.logout\(\);[\s\S]*\}/,
+  'Logout should always clear auth state even if the sandbox pause request fails or times out.',
+);
+
+assert.match(
+  authGateSource,
+  /const LOGOUT_PAUSE_TIMEOUT_MS = \d+;/,
+  'Logout should cap how long sandbox pause can delay clearing auth state.',
 );
