@@ -5,3 +5,8 @@ dist
 
 # Ignore the output video from Git but not videos you import into src/.
 out
+
+
+# 录屏中间产物（webm）与渲染输出
+public/clips/raw
+out
