@@ -6,6 +6,7 @@ import { ensureSandbox, pauseSimulation } from '../services/sandboxApi';
 import type { AuthUser } from '../services/types';
 import { getWebSocketService } from '../services/webSocket';
 import { LoginPanel } from './LoginPanel';
+import { PublicLandingPage } from './PublicLandingPage';
 
 export type AuthGateState = {
   backendConfigured: boolean;
@@ -19,13 +20,14 @@ type Props = {
 };
 
 type BootstrapState = 'checking' | 'authenticated' | 'unauthenticated' | 'offline';
+type UnauthenticatedView = 'landing' | 'login';
 
 export function AuthGate({ children, ensureWorkspace = true }: Props) {
   const runtime = useMemo(() => getRuntimeMode(), []);
   const authService = useMemo(() => getAuthService(), []);
   const [state, setState] = useState<BootstrapState>(runtime.configured ? 'checking' : 'offline');
   const [user, setUser] = useState<AuthUser | null>(authService.getCurrentUser());
-  const [error, setError] = useState('');
+  const [unauthenticatedView, setUnauthenticatedView] = useState<UnauthenticatedView>('landing');
 
   async function bootstrapAuthenticatedSession(): Promise<void> {
     if (!runtime.configured) {
@@ -42,16 +44,18 @@ export function AuthGate({ children, ensureWorkspace = true }: Props) {
 
     try {
       await fetchCurrentUser();
-      if (ensureWorkspace) {
-        await ensureSandbox();
-      }
       setUser(authService.getCurrentUser());
-      setError('');
       setState('authenticated');
-    } catch (err) {
+      if (ensureWorkspace) {
+        try {
+          await ensureSandbox();
+        } catch (err) {
+          console.warn('Failed to ensure sandbox after authentication:', err);
+        }
+      }
+    } catch {
       authService.logout();
       setUser(null);
-      setError(err instanceof Error ? err.message : '无法恢复登录状态');
       setState('unauthenticated');
     }
   }
@@ -65,6 +69,7 @@ export function AuthGate({ children, ensureWorkspace = true }: Props) {
     }
     authService.logout();
     setUser(null);
+    setUnauthenticatedView('landing');
     setState(runtime.configured ? 'unauthenticated' : 'offline');
   }
 
@@ -72,6 +77,7 @@ export function AuthGate({ children, ensureWorkspace = true }: Props) {
     void bootstrapAuthenticatedSession();
     const handleAuthLogout = () => {
       setUser(null);
+      setUnauthenticatedView('landing');
       setState(runtime.configured ? 'unauthenticated' : 'offline');
     };
     window.addEventListener(AUTH_LOGOUT_EVENT, handleAuthLogout);
@@ -79,18 +85,6 @@ export function AuthGate({ children, ensureWorkspace = true }: Props) {
     // Runtime config is read once at app boot.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ensureWorkspace]);
-
-  if (state === 'offline' || state === 'authenticated') {
-    return (
-      <>
-        {children({
-          backendConfigured: runtime.configured,
-          user,
-          onLogout: handleLogout,
-        })}
-      </>
-    );
-  }
 
   if (state === 'checking') {
     return (
@@ -104,10 +98,24 @@ export function AuthGate({ children, ensureWorkspace = true }: Props) {
     );
   }
 
-  return (
-    <>
-      {error && <div className="auth-toast" role="alert">{error}</div>}
-      <LoginPanel onAuthenticated={bootstrapAuthenticatedSession} />
-    </>
-  );
+  const showWorkspace =
+    state === 'authenticated' || (state === 'offline' && unauthenticatedView === 'login');
+
+  if (showWorkspace) {
+    return (
+      <>
+        {children({
+          backendConfigured: runtime.configured,
+          user,
+          onLogout: handleLogout,
+        })}
+      </>
+    );
+  }
+
+  if (unauthenticatedView === 'landing') {
+    return <PublicLandingPage onStartExperience={() => setUnauthenticatedView('login')} />;
+  }
+
+  return <LoginPanel onAuthenticated={bootstrapAuthenticatedSession} />;
 }

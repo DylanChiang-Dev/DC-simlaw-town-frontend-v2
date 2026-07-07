@@ -293,7 +293,7 @@ function buildIdleScene(): DialogueScene {
       catalog: null,
       lastTechEventAt: '',
       memory: '演示数据来自真实流程材料抽取与精修。',
-      pipeline: '六案可选，每案覆盖咨询到终审。',
+      pipeline: '百余案可选，每案覆盖咨询到终审。',
       skills: [],
       tools: [],
       usedSkills: {},

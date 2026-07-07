@@ -1,4 +1,5 @@
 import type { CaseClosingEvaluation, CaseDocumentEntry } from '../services/types';
+import { PRETRIAL_MEDIATION_REFUSED_TEXT } from '../state/vnEventReducer';
 import type { DemoCase, DemoStage, DemoStageCode } from './demoTypes';
 
 const NOW = '2026-05-20T10:00:00.000+08:00';
@@ -258,6 +259,7 @@ function buildStages(item: typeof CASE_BLUEPRINTS[number]): DemoStage[] {
       speakerName: '刘正',
       sceneText: '一审庭审围绕核心争点展开。',
       entries: [
+        { speaker: 'system', speakerName: '系统', text: PRETRIAL_MEDIATION_REFUSED_TEXT },
         { speaker: 'system', speakerName: '系统', text: '一审正式开庭。' },
         { speaker: 'judge', speakerName: '刘正', text: `原告方，请围绕本案事实基础、证据链条以及对“${item.defensePoint}”的回应发表意见。` },
       ],

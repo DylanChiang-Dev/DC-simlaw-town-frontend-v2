@@ -12,8 +12,8 @@ const reader = readFileSync(join(root, 'src', 'humanEval', 'HumanEvalCaseReader.
 const styles = readFileSync(join(root, 'src', 'styles.css'), 'utf8');
 const humanEvalPageRule = styles.match(/\.human-eval-page\s*\{[^}]*\}/)?.[0] || '';
 
-assert.match(main, /window\.location\.pathname\s*===\s*'\/human-eval'/, 'main.tsx should route /human-eval to HumanEvalApp.');
-assert.match(main, /document\.body\.classList\.toggle\('human-eval-route',\s*window\.location\.pathname\s*===\s*'\/human-eval'\)/, 'main.tsx should mark the body on the human eval route.');
+assert.match(main, /cleanPathname\.endsWith\('\/human-eval'\)/, 'main.tsx should route /human-eval and subpath deployments to HumanEvalApp.');
+assert.match(main, /document\.body\.classList\.toggle\('human-eval-route',\s*cleanPathname\.endsWith\('\/human-eval'\)\)/, 'main.tsx should mark the body on the human eval route across subpath deployments.');
 assert.match(app, /fetchHumanEvalCases/, 'HumanEvalApp should fetch case list.');
 assert.match(app, /assignedCases/, 'HumanEvalApp should keep a separate assigned case list.');
 assert.match(app, /allCases/, 'HumanEvalApp should keep a separate full case list.');

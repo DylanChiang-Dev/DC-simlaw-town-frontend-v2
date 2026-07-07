@@ -1,5 +1,8 @@
+import { registerResolvedCaseArt } from '../data/caseArt';
+import { resolveCaseArtProfile } from '../data/caseArtResolver';
 import { authenticatedFetch, readJsonResponse } from './apiClient';
-import type { AgentCapability, SandboxCaseStatus, SandboxCaseSummary, SimulationRuntimeError, SimulationStatus } from './types';
+import { mapPartyArtMeta, type PartyArtMetaResponse } from './partyArtMeta';
+import type { AgentCapability, SandboxCaseStatus, SandboxCaseSummary, SimulationMode, SimulationRuntimeError, SimulationStatus } from './types';
 
 type AgentCapabilityResponse = {
   agent_id?: string;
@@ -32,6 +35,7 @@ type SandboxStatusResponse = {
   can_restart: boolean;
   last_error?: SimulationRuntimeError | null;
   agent_capabilities?: AgentCapabilityResponse[];
+  simulation_mode?: string;
 };
 
 type SimulationControlResponse = {
@@ -49,6 +53,9 @@ type SandboxCaseSummaryResponse = {
   training_category: string;
   difficulty: string;
   status: SandboxCaseStatus;
+  is_custom?: boolean;
+  plaintiff_art?: PartyArtMetaResponse;
+  defendant_art?: PartyArtMetaResponse;
 };
 
 function mapStringList(value: unknown): string[] {
@@ -96,6 +103,10 @@ function mapSandboxStatus(payload: SandboxStatusResponse): SimulationStatus {
     agentCapabilities: Array.isArray(payload.agent_capabilities)
       ? payload.agent_capabilities.map(mapAgentCapability)
       : [],
+    simulationMode:
+      payload.simulation_mode === 'plaintiff' || payload.simulation_mode === 'auto'
+        ? payload.simulation_mode
+        : undefined,
   };
 }
 
@@ -109,6 +120,9 @@ function mapSandboxCaseSummary(payload: SandboxCaseSummaryResponse): SandboxCase
     trainingCategory: payload.training_category,
     difficulty: payload.difficulty,
     status: payload.status,
+    isCustom: Boolean(payload.is_custom),
+    plaintiffArt: mapPartyArtMeta(payload.plaintiff_art),
+    defendantArt: mapPartyArtMeta(payload.defendant_art),
   };
 }
 
@@ -127,14 +141,19 @@ export async function fetchSimulationStatus(): Promise<SimulationStatus> {
 export async function fetchSandboxCases(): Promise<SandboxCaseSummary[]> {
   const response = await authenticatedFetch('/api/sandbox/cases', { method: 'GET' });
   const payload = await readJsonResponse<{ cases?: SandboxCaseSummaryResponse[] }>(response);
-  return Array.isArray(payload.cases) ? payload.cases.map(mapSandboxCaseSummary) : [];
+  const cases = Array.isArray(payload.cases) ? payload.cases.map(mapSandboxCaseSummary) : [];
+  registerResolvedCaseArt(cases.map(resolveCaseArtProfile));
+  return cases;
 }
 
-export async function startSimulation(caseId?: string): Promise<SimulationStatus> {
+export async function startSimulation(caseId?: string, mode?: SimulationMode): Promise<SimulationStatus> {
+  const body: Record<string, string> = {};
+  if (caseId) body.case_id = caseId;
+  if (mode) body.simulation_mode = mode;
   const response = await authenticatedFetch('/api/sandbox/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: caseId ? JSON.stringify({ case_id: caseId }) : undefined,
+    body: Object.keys(body).length ? JSON.stringify(body) : undefined,
   });
   const payload = await readJsonResponse<SimulationControlResponse>(response);
   return mapSandboxStatus(payload.sandbox);

@@ -9,9 +9,10 @@ import './styles.css';
 
 const searchParams = new URLSearchParams(window.location.search);
 const recordingMode = searchParams.get('recording');
-const RootApp = window.location.pathname === '/human-eval'
+const cleanPathname = window.location.pathname.replace(/\/$/, '');
+const RootApp = cleanPathname.endsWith('/human-eval')
   ? HumanEvalApp
-  : window.location.pathname === '/demo'
+  : cleanPathname.endsWith('/demo')
     ? DemoApp
   : recordingMode === 'frontend-demo'
   ? FrontendDemoApp
@@ -19,8 +20,8 @@ const RootApp = window.location.pathname === '/human-eval'
     ? LiveSimulationDemoApp
     : App;
 
-document.body.classList.toggle('human-eval-route', window.location.pathname === '/human-eval');
-document.body.classList.toggle('demo-route', window.location.pathname === '/demo');
+document.body.classList.toggle('human-eval-route', cleanPathname.endsWith('/human-eval'));
+document.body.classList.toggle('demo-route', cleanPathname.endsWith('/demo'));
 document.body.classList.toggle('recording-frontend-demo', recordingMode === 'frontend-demo');
 document.body.classList.toggle('recording-live-simulation', recordingMode === 'live-simulation');
 

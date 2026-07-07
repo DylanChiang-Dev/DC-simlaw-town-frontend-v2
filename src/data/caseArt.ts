@@ -111,6 +111,33 @@ export function normalizeCaseArtId(caseId: unknown): string {
   return trimmed;
 }
 
+const resolvedCaseArtRegistry: CaseArtAssetMap = {};
+
+export function registerResolvedCaseArt(profiles: CaseArtProfile[]): void {
+  profiles.forEach((profile) => {
+    const normalized = normalizeCaseArtId(profile.caseId);
+    if (normalized && !CASE_ART_PROFILES[normalized]) {
+      resolvedCaseArtRegistry[normalized] = profile;
+    }
+  });
+}
+
 export function getCaseArtProfile(caseId: unknown): CaseArtProfile {
-  return CASE_ART_PROFILES[normalizeCaseArtId(caseId)] || DEFAULT_CASE_ART_PROFILE;
+  const normalized = normalizeCaseArtId(caseId);
+  return CASE_ART_PROFILES[normalized] || resolvedCaseArtRegistry[normalized] || DEFAULT_CASE_ART_PROFILE;
+}
+
+export function resolvePortraitForKey(
+  caseId: string | undefined,
+  key: CharacterKey,
+  fallback: string,
+): string {
+  const normalized = normalizeCaseArtId(caseId || '');
+  const profile = CASE_ART_PROFILES[normalized] || resolvedCaseArtRegistry[normalized];
+  if (!profile) return fallback;
+  if (key === profile.plaintiffKey) return profile.plaintiffPortrait;
+  if (key === profile.defendantKey) return profile.defendantPortrait;
+  if (key === profile.plaintiffLawyerKey) return profile.plaintiffLawyerPortrait;
+  if (key === profile.defendantLawyerKey) return profile.defendantLawyerPortrait;
+  return fallback;
 }

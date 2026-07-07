@@ -8,7 +8,7 @@ import type {
   RuntimeTechCatalog,
   SimulationStatus,
 } from '../services/types';
-import type { DialogueHistoryEntry, RuntimeStatus } from '../state/vnEventReducer';
+import { PRETRIAL_MEDIATION_REFUSED_TEXT, type DialogueHistoryEntry, type RuntimeStatus } from '../state/vnEventReducer';
 
 export type FrontendDemoSceneId = 'consult' | 'reply' | 'document' | 'court' | 'closing';
 
@@ -264,6 +264,7 @@ const documentHistory = [
 
 const courtHistory = [
   ...documentHistory,
+  systemEntry('demo-court-mediation', 'CI', '一审庭审', PRETRIAL_MEDIATION_REFUSED_TEXT),
   systemEntry('demo-court-start', 'CI', '一审庭审', '一审正式开庭。'),
   entry(
     'demo-court-current',

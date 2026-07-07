@@ -1,7 +1,10 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AuthGate, type AuthGateState } from './components/AuthGate';
 import { BuildVersionBadge } from './components/BuildVersionBadge';
 import { CasePicker } from './components/CasePicker';
+import { CaseConstructionWizard } from './components/CaseConstructionWizard';
+import { CustomCaseList } from './components/CustomCaseList';
+import { LandingChoice } from './components/LandingChoice';
 import { CaseClosingSummaryDialog } from './components/CaseClosingSummaryDialog';
 import { CaseDocumentsPanel } from './components/CaseDocumentsPanel';
 import { CaseTimeline } from './components/CaseTimeline';
@@ -10,6 +13,7 @@ import { DialogueBox } from './components/DialogueBox';
 import { OnboardingCoach } from './components/OnboardingCoach';
 import { OnboardingGuideDialog } from './components/OnboardingGuideDialog';
 import { PlayerLawyerInputDialog } from './components/PlayerLawyerInputDialog';
+import { PretrialMediationDialog } from './components/PretrialMediationDialog';
 import { PlayerLawyerTaskPanel } from './components/PlayerLawyerTaskPanel';
 import { TechLedger } from './components/TechLedger';
 import { TownRadar } from './components/TownRadar';
@@ -28,13 +32,16 @@ import { useOnboardingState } from './onboarding/useOnboardingState';
 import { usePlayerLawyerRuntime } from './state/usePlayerLawyerRuntime';
 import { useSimulationRuntime } from './state/useSimulationRuntime';
 import { useTownRadarRuntime } from './state/useTownRadarRuntime';
-import type { PlayerLawyerSkill, SimulationStatus } from './services/types';
+import type { PlayerLawyerSkill, SimulationMode, SimulationStatus } from './services/types';
 import {
   createInitialVnRuntimeState,
   createSceneForHistoryEntry,
+  getCaseEventName,
+  hasPretrialMediationRecord,
   vnEventReducer,
   type DialogueHistoryEntry,
 } from './state/vnEventReducer';
+import { createVnEventQueue } from './state/vnEventQueue';
 import { fetchRuntimeTechCatalog } from './services/runtimeTechCatalogApi';
 
 type DocumentFollowupPair = {
@@ -60,9 +67,12 @@ const STAGE_DOCUMENT_TYPES: Record<string, string> = {
   AD: 'AD',
   AR: 'AR',
 };
-const AUTO_NEXT_STORAGE_KEY = 'simlaw-town:auto-next-enabled';
+const AUTO_NEXT_STORAGE_KEY = 'legalworld:auto-next-enabled';
+const LEGACY_AUTO_NEXT_STORAGE_KEY = 'simlaw-town:auto-next-enabled';
 const AUTO_NEXT_ACKNOWLEDGE_DELAY_MS = 900;
 const TECH_HIGHLIGHT_DURATION_MS = 4000;
+const CONFLICT_CHECK_RUNNING_PAUSE_MS = 2600;
+const CONFLICT_CHECK_PASSED_PAUSE_MS = 2000;
 
 function AppShell({ auth }: AppShellProps) {
   const [documentsOpen, setDocumentsOpen] = useState(false);
@@ -77,6 +87,8 @@ function AppShell({ auth }: AppShellProps) {
   const [documentFollowupHistoryByRequestId, setDocumentFollowupHistoryByRequestId] = useState<Record<string, DocumentFollowupPair[]>>({});
   const [documentSkills, setDocumentSkills] = useState<PlayerLawyerSkill[]>([]);
   const [restartConfirmOpen, setRestartConfirmOpen] = useState(false);
+  const [mediationPromptOpen, setMediationPromptOpen] = useState(false);
+  const [entryView, setEntryView] = useState<'landing' | 'preset' | 'custom'>('landing');
   const [autoNextEnabled, setAutoNextEnabled] = useState(() => readAutoNextPreference());
   const onboarding = useOnboardingState();
   const runtime = useSimulationRuntime(auth.backendConfigured && Boolean(auth.user));
@@ -85,6 +97,10 @@ function AppShell({ auth }: AppShellProps) {
     runtime.activeCaseId,
   );
   const [vnRuntime, dispatchVnEvent] = useReducer(vnEventReducer, undefined, createInitialVnRuntimeState);
+  const vnEventQueue = useMemo(() => createVnEventQueue(dispatchVnEvent), [dispatchVnEvent]);
+  // WS handler 闭包不随 vnRuntime 重建，庭前调解去重需要通过 ref 读取最新 history。
+  const vnHistoryRef = useRef(vnRuntime.history);
+  vnHistoryRef.current = vnRuntime.history;
   const scene = vnRuntime.scene;
   const nextUnacknowledgedStoryEntry = getNextUnacknowledgedStoryEntry(vnRuntime.history, acknowledgedDialogueEntryId);
   const displayedScene = nextUnacknowledgedStoryEntry
@@ -116,6 +132,17 @@ function AppShell({ auth }: AppShellProps) {
     && !runtime.activeCaseId
     && !runtime.loading,
   );
+  // 本轮会话是否已结案：只看本地 history，不用 simulation.status，
+  // 避免“结案后刷新页面 → status=completed 永远回不到准备页”
+  const sessionCaseClosed = vnRuntime.history.some(isCaseClosedEntry);
+  // 两阶段切换：准备阶段渲染全屏入口页，运行阶段才渲染小镇 vn-layout
+  const preparationPhase = Boolean(
+    auth.backendConfigured
+    && auth.user
+    && !runtime.activeCaseId
+    && !sessionCaseClosed,
+  );
+  const presetCases = runtime.cases.filter((c) => !c.isCustom);
   const activeDocumentFollowupCount = visiblePlayerRequest
     ? documentFollowupHistoryByRequestId[visiblePlayerRequest.requestId]?.length || 0
     : 0;
@@ -183,7 +210,7 @@ function AppShell({ auth }: AppShellProps) {
   useEffect(() => {
     if (!autoNextEnabled) return;
     if (!nextUnacknowledgedStoryEntry) return;
-    if (caseClosed || runtime.error || runtime.simulation?.paused || playerDialogOpen) return;
+    if (caseClosed || runtime.error || runtime.simulation?.paused || playerDialogOpen || mediationPromptOpen) return;
     const timeoutId = window.setTimeout(() => {
       setAcknowledgedDialogueEntryId(nextUnacknowledgedStoryEntry.id);
     }, AUTO_NEXT_ACKNOWLEDGE_DELAY_MS);
@@ -191,6 +218,7 @@ function AppShell({ auth }: AppShellProps) {
   }, [
     autoNextEnabled,
     caseClosed,
+    mediationPromptOpen,
     nextUnacknowledgedStoryEntry,
     playerDialogOpen,
     runtime.error,
@@ -254,8 +282,12 @@ function AppShell({ auth }: AppShellProps) {
         dispatchVnEvent({ type: 'ws-disconnected' });
       }],
       ['ws:dialogue-update', (payload) => {
-        setDialogueGate(null);
-        dispatchVnEvent({ type: 'dialogue-update', payload });
+        // 小镇 NPC 环境对话（agent_update_dialogue）不属于案件对话流，
+        // 不能清掉庭审等阶段正在等待的 dialogue gate；是否入主线由 reducer 按阶段决定。
+        if (String(payload?.type || '') !== 'agent_update_dialogue') {
+          setDialogueGate(null);
+        }
+        vnEventQueue.enqueue([{ event: { type: 'dialogue-update', payload } }]);
       }],
       ['ws:dialogue-gate-waiting', (payload) => {
         void autoContinueDialogueGate(payload);
@@ -274,24 +306,47 @@ function AppShell({ auth }: AppShellProps) {
         if (shouldClearDialogueGateAfterRuntimeProgress(payload)) {
           setDialogueGate(null);
         }
-        dispatchVnEvent({ type: 'runtime-progress', payload });
+        vnEventQueue.enqueue([{ event: { type: 'runtime-progress', payload } }]);
       }],
       ['ws:step-gate-waiting', (payload) => dispatchVnEvent({ type: 'step-gate-waiting', payload })],
       ['ws:step-gate-accepted', (payload) => dispatchVnEvent({ type: 'step-gate-accepted', payload })],
       ['ws:step-gate-error', (payload) => dispatchVnEvent({ type: 'step-gate-error', payload })],
       ['ws:case-state-change', (payload) => {
         setDialogueGate(null);
-        dispatchVnEvent({ type: 'case-state-change', payload });
+        if (getCaseEventName(payload || {}) === 'CASE_ASSIGNED') {
+          // 律师分配前插入“所内利益冲突检索”节点：逐条停顿入场，营造检索真实感；
+          // 停顿期间后端推来的后续剧情事件在队列中排队，不会插到检索提示前面。
+          vnEventQueue.enqueue([
+            { event: { type: 'conflict-check-notice', payload: { ...payload, phase: 'running' } } },
+            {
+              event: { type: 'conflict-check-notice', payload: { ...payload, phase: 'passed' } },
+              delayMs: CONFLICT_CHECK_RUNNING_PAUSE_MS,
+            },
+            { event: { type: 'case-state-change', payload }, delayMs: CONFLICT_CHECK_PASSED_PAUSE_MS },
+          ]);
+          return;
+        }
+        if (getCaseEventName(payload || {}) === 'ENTER_TRIAL_FIRST_INSTANCE') {
+          // 庭前调解选择框：暂停队列等待玩家点选，期间后端推来的庭审剧情事件
+          // 按序排队；玩家选择后先写入调解旁白，再放行“一审正式开庭。”及后续事件。
+          if (!hasPretrialMediationRecord(vnHistoryRef.current)) {
+            vnEventQueue.pause();
+            setMediationPromptOpen(true);
+          }
+          vnEventQueue.enqueue([{ event: { type: 'case-state-change', payload } }]);
+          return;
+        }
+        vnEventQueue.enqueue([{ event: { type: 'case-state-change', payload } }]);
       }],
       ['ws:scenario-start', (payload) => {
         setDialogueGate(null);
-        dispatchVnEvent({ type: 'scenario-start', payload });
+        vnEventQueue.enqueue([{ event: { type: 'scenario-start', payload } }]);
       }],
       ['ws:scenario-end', (payload) => {
         setDialogueGate(null);
-        dispatchVnEvent({ type: 'scenario-end', payload });
+        vnEventQueue.enqueue([{ event: { type: 'scenario-end', payload } }]);
       }],
-      ['ws:case-runtime-issue', (payload) => dispatchVnEvent({ type: 'case-runtime-issue', payload })],
+      ['ws:case-runtime-issue', (payload) => vnEventQueue.enqueue([{ event: { type: 'case-runtime-issue', payload } }])],
       ['ws:player-lawyer-input-required', (payload) => {
         setDialogueGate(null);
         dispatchVnEvent({ type: 'player-lawyer-input-required', payload });
@@ -316,21 +371,34 @@ function AppShell({ auth }: AppShellProps) {
     return () => {
       handlers.forEach(([event, handler]) => eventBus.off(event, handler));
       getWebSocketService().disconnect();
+      vnEventQueue.clear();
     };
-  }, [auth.backendConfigured, auth.user]);
+  }, [auth.backendConfigured, auth.user, vnEventQueue]);
 
-  async function handleStartSelectedCase(caseId?: string): Promise<void> {
+  async function handleStartSelectedCase(caseId?: string, mode?: SimulationMode): Promise<void> {
+    vnEventQueue.clear();
     setDialogueGate(null);
+    setMediationPromptOpen(false);
     setPlayerDialogOpen(false);
     setAutoOpenedPlayerRequestId('');
     setAcknowledgedDialogueEntryId('');
     setClosingSummaryOpen(false);
     setClosingSummaryEntryId('');
-    await runtime.startSelectedCase(caseId);
+    setEntryView('landing');
+    await runtime.startSelectedCase(caseId, mode);
+  }
+
+  function handleMediationChoice(accepted: boolean): void {
+    setMediationPromptOpen(false);
+    // 先同步写入调解结果旁白，再放行队列，保证旁白位于“一审正式开庭。”之前。
+    dispatchVnEvent({ type: 'pretrial-mediation-result', payload: { accepted } });
+    vnEventQueue.resume();
   }
 
   async function handleRestartSimulation(): Promise<void> {
+    vnEventQueue.clear();
     setDialogueGate(null);
+    setMediationPromptOpen(false);
     setPlayerDialogOpen(false);
     setAutoOpenedPlayerRequestId('');
     setAcknowledgedDialogueEntryId('');
@@ -486,12 +554,54 @@ function AppShell({ auth }: AppShellProps) {
           </button>
         </section>
       )}
-      {casePickerOpen && (
+      {preparationPhase ? (
+      <div className="entry-screen">
+      {!casePickerOpen && (
+        <section className="entry-status" aria-live="polite">
+          {runtime.loading ? (
+            <>
+              <strong>正在同步案件工作区…</strong>
+              <p>正在获取模拟状态和案件列表，请稍候。</p>
+            </>
+          ) : runtime.error ? (
+            <>
+              <strong>案件工作区同步失败</strong>
+              <p>{runtime.error}</p>
+              <div className="entry-status-actions">
+                <button className="secondary-action" onClick={() => void runtime.refresh()} type="button">
+                  重试
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <strong>案件工作区未就绪</strong>
+              <p>当前模拟状态暂不可启动新案件，可以重试同步或重置模拟。</p>
+              <div className="entry-status-actions">
+                <button className="secondary-action" onClick={() => void runtime.refresh()} type="button">
+                  重试
+                </button>
+                <button className="secondary-action" onClick={() => setRestartConfirmOpen(true)} type="button">
+                  重置模拟
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+      {casePickerOpen && entryView === 'landing' && (
+        <LandingChoice
+          onPreset={() => setEntryView('preset')}
+          onCustom={() => setEntryView('custom')}
+        />
+      )}
+      {casePickerOpen && entryView === 'preset' && (
         <CasePicker
-          cases={runtime.cases}
+          cases={presetCases}
           disabled={!auth.user}
           error={runtime.error}
           loading={runtime.loading}
+          onBack={() => setEntryView('landing')}
           onRefresh={runtime.refresh}
           onSelect={runtime.selectCase}
           onOpenHumanEval={() => {
@@ -499,8 +609,19 @@ function AppShell({ auth }: AppShellProps) {
           }}
           onStart={handleStartSelectedCase}
           selectedCaseId={runtime.selectedCaseId}
+          variant="page"
         />
       )}
+      {casePickerOpen && entryView === 'custom' && (
+        <CustomCaseList
+          disabled={!auth.user}
+          error={runtime.error}
+          onBack={() => setEntryView('landing')}
+          onStart={handleStartSelectedCase}
+        />
+      )}
+      </div>
+      ) : (
       <div className="vn-layout">
         <div className="side-rail">
           {showUserTaskPanel && (
@@ -542,6 +663,7 @@ function AppShell({ auth }: AppShellProps) {
           </div>
         </div>
       </div>
+      )}
       <PlayerLawyerInputDialog
         documentSkill={activeDocumentSkill}
         initialFollowupHistory={activePlayerRequest ? documentFollowupHistoryByRequestId[activePlayerRequest.requestId] || [] : []}
@@ -565,13 +687,15 @@ function AppShell({ auth }: AppShellProps) {
         }}
         request={playerDialogOpen ? visiblePlayerRequestForDialog : null}
       />
-      <CaseTimeline
-        activeCode={displayedScene.stageCode}
-        activeEntry={nextUnacknowledgedStoryEntry}
-        backendMode={auth.backendConfigured && Boolean(auth.user)}
-        history={vnRuntime.history}
-        playerPlaintiffPerspective={playerLawyer.status?.enabled && playerLawyer.status?.playerMode === 'plaintiff'}
-      />
+      {!preparationPhase && (
+        <CaseTimeline
+          activeCode={displayedScene.stageCode}
+          activeEntry={nextUnacknowledgedStoryEntry}
+          backendMode={auth.backendConfigured && Boolean(auth.user)}
+          history={vnRuntime.history}
+          playerPlaintiffPerspective={playerLawyer.status?.enabled && playerLawyer.status?.playerMode === 'plaintiff'}
+        />
+      )}
       <CaseDocumentsPanel
         caseId={runtime.selectedCaseId || playerLawyer.activeRequest?.caseId || ''}
         onClose={() => setDocumentsOpen(false)}
@@ -596,6 +720,7 @@ function AppShell({ auth }: AppShellProps) {
           onOpenGuide={onboarding.openGuide}
         />
       )}
+      {mediationPromptOpen && <PretrialMediationDialog onChoose={handleMediationChoice} />}
       {restartConfirmOpen && (
         <div className="modal-layer" role="dialog" aria-modal="true" aria-label="确认重置模拟">
           <section className="confirm-dialog">
@@ -731,10 +856,19 @@ function isOperationalContinueNotice(text: string): boolean {
 
 function readAutoNextPreference(): boolean {
   try {
+    migrateStorageValue(AUTO_NEXT_STORAGE_KEY, LEGACY_AUTO_NEXT_STORAGE_KEY);
     return localStorage.getItem(AUTO_NEXT_STORAGE_KEY) === 'true';
   } catch {
     return false;
   }
+}
+
+function migrateStorageValue(nextKey: string, legacyKey: string): void {
+  if (localStorage.getItem(nextKey) !== null) return;
+  const legacyValue = localStorage.getItem(legacyKey);
+  if (legacyValue === null) return;
+  localStorage.setItem(nextKey, legacyValue);
+  localStorage.removeItem(legacyKey);
 }
 
 function isDocumentStage(stage?: string): boolean {

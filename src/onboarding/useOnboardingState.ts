@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react';
 import type { OnboardingStepId } from './onboardingContent';
 
-export const ONBOARDING_COMPLETED_STORAGE_KEY = 'simlaw-town:onboarding-v1-completed';
-export const ONBOARDING_DISMISSED_STEPS_STORAGE_KEY = 'simlaw-town:onboarding-v1-dismissed-steps';
+export const ONBOARDING_COMPLETED_STORAGE_KEY = 'legalworld:onboarding-v1-completed';
+export const ONBOARDING_DISMISSED_STEPS_STORAGE_KEY = 'legalworld:onboarding-v1-dismissed-steps';
+const LEGACY_ONBOARDING_COMPLETED_STORAGE_KEY = 'simlaw-town:onboarding-v1-completed';
+const LEGACY_ONBOARDING_DISMISSED_STEPS_STORAGE_KEY = 'simlaw-town:onboarding-v1-dismissed-steps';
 
 type DismissedStepMap = Record<string, true>;
 
@@ -39,6 +41,8 @@ export function useOnboardingState(): OnboardingState {
   const resetOnboarding = useCallback(() => {
     localStorage.removeItem(ONBOARDING_COMPLETED_STORAGE_KEY);
     localStorage.removeItem(ONBOARDING_DISMISSED_STEPS_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_ONBOARDING_COMPLETED_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_ONBOARDING_DISMISSED_STEPS_STORAGE_KEY);
     setIsCompleted(false);
     setDismissedSteps({});
     setGuideOpen(true);
@@ -58,6 +62,7 @@ export function useOnboardingState(): OnboardingState {
 
 function readCompleted(): boolean {
   try {
+    migrateStorageValue(ONBOARDING_COMPLETED_STORAGE_KEY, LEGACY_ONBOARDING_COMPLETED_STORAGE_KEY);
     return localStorage.getItem(ONBOARDING_COMPLETED_STORAGE_KEY) === 'true';
   } catch {
     return false;
@@ -74,6 +79,7 @@ function writeCompleted(value: boolean): void {
 
 function readDismissedSteps(): DismissedStepMap {
   try {
+    migrateStorageValue(ONBOARDING_DISMISSED_STEPS_STORAGE_KEY, LEGACY_ONBOARDING_DISMISSED_STEPS_STORAGE_KEY);
     const rawValue = localStorage.getItem(ONBOARDING_DISMISSED_STEPS_STORAGE_KEY);
     if (!rawValue) return {};
     const parsed = JSON.parse(rawValue);
@@ -92,4 +98,12 @@ function writeDismissedSteps(value: DismissedStepMap): void {
   } catch {
     // Onboarding should never break the app when browser storage is unavailable.
   }
+}
+
+function migrateStorageValue(nextKey: string, legacyKey: string): void {
+  if (localStorage.getItem(nextKey) !== null) return;
+  const legacyValue = localStorage.getItem(legacyKey);
+  if (legacyValue === null) return;
+  localStorage.setItem(nextKey, legacyValue);
+  localStorage.removeItem(legacyKey);
 }

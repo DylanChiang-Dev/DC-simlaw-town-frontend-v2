@@ -12,17 +12,27 @@ import { VisualNovelStage } from '../components/VisualNovelStage';
 import type { CaseClosingSummary, SandboxCaseSummary } from '../services/types';
 import { useDemoSimulationRuntime } from './useDemoSimulationRuntime';
 
+const DEMO_PARTY_ART = {
+  partyType: '',
+  gender: '',
+  birthYear: null,
+  hasRepresentative: false,
+};
+
 export function DemoApp() {
   const demo = useDemoSimulationRuntime();
   const caseOptions: SandboxCaseSummary[] = demo.caseOptions.map((item) => ({
     caseId: item.caseId,
     defendantName: item.defendantName,
     difficulty: item.difficulty,
+    isCustom: false,
     plaintiffName: item.plaintiffName,
     rawCaseCause: item.trainingCategory,
     status: demo.selectedCase?.caseId === item.caseId ? 'running' : 'idle',
     title: item.title,
     trainingCategory: item.trainingCategory,
+    plaintiffArt: DEMO_PARTY_ART,
+    defendantArt: DEMO_PARTY_ART,
   }));
   const activeTask = demo.activeTask;
   const closingSummary = demo.selectedCase ? buildOfflineClosingSummary(demo.selectedCase) : null;

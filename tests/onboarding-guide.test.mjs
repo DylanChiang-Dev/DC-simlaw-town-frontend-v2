@@ -70,14 +70,32 @@ assert.match(
 
 assert.match(
   stateSource,
-  /ONBOARDING_COMPLETED_STORAGE_KEY\s*=\s*["']simlaw-town:onboarding-v1-completed["']/,
+  /ONBOARDING_COMPLETED_STORAGE_KEY\s*=\s*["']legalworld:onboarding-v1-completed["']/,
   "Onboarding completion should use a versioned localStorage key.",
 );
 
 assert.match(
   stateSource,
-  /ONBOARDING_DISMISSED_STEPS_STORAGE_KEY\s*=\s*["']simlaw-town:onboarding-v1-dismissed-steps["']/,
+  /ONBOARDING_DISMISSED_STEPS_STORAGE_KEY\s*=\s*["']legalworld:onboarding-v1-dismissed-steps["']/,
   "Dismissed key hints should use a versioned localStorage key.",
+);
+
+assert.match(
+  stateSource,
+  /const LEGACY_ONBOARDING_COMPLETED_STORAGE_KEY = 'simlaw-town:onboarding-v1-completed';/,
+  "Onboarding should retain the legacy completion key for one-time migration.",
+);
+
+assert.match(
+  stateSource,
+  /const LEGACY_ONBOARDING_DISMISSED_STEPS_STORAGE_KEY = 'simlaw-town:onboarding-v1-dismissed-steps';/,
+  "Onboarding should retain the legacy dismissed-step key for one-time migration.",
+);
+
+assert.match(
+  stateSource,
+  /function migrateStorageValue\([\s\S]*localStorage\.getItem\(nextKey\)[\s\S]*localStorage\.getItem\(legacyKey\)[\s\S]*localStorage\.setItem\(nextKey, legacyValue\)[\s\S]*localStorage\.removeItem\(legacyKey\)/,
+  "Onboarding state should migrate existing simlaw-town keys to legalworld keys and clear the legacy entries.",
 );
 
 assert.match(

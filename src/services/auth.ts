@@ -1,8 +1,14 @@
 import type { AuthResponseUser, AuthSession, AuthUser } from './types';
 
-export const AUTH_LOGOUT_EVENT = 'simlaw-v2:auth-logout';
+export const AUTH_LOGOUT_EVENT = 'legalworld:auth-logout';
 
 const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'legalworld_auth_access_token',
+  AUTH_USER: 'legalworld_auth_user',
+  EXPIRES_AT: 'legalworld_auth_expires_at',
+};
+
+const LEGACY_STORAGE_KEYS = {
   ACCESS_TOKEN: 'simlaw_auth_access_token',
   AUTH_USER: 'simlaw_auth_user',
   EXPIRES_AT: 'simlaw_auth_expires_at',
@@ -72,6 +78,9 @@ export class AuthService {
     localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
     localStorage.removeItem(STORAGE_KEYS.EXPIRES_AT);
+    localStorage.removeItem(LEGACY_STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(LEGACY_STORAGE_KEYS.AUTH_USER);
+    localStorage.removeItem(LEGACY_STORAGE_KEYS.EXPIRES_AT);
     window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT));
   }
 
@@ -100,6 +109,9 @@ export class AuthService {
   }
 
   private readSessionFromStorage(): AuthSession | null {
+    migrateStorageValue(STORAGE_KEYS.ACCESS_TOKEN, LEGACY_STORAGE_KEYS.ACCESS_TOKEN);
+    migrateStorageValue(STORAGE_KEYS.AUTH_USER, LEGACY_STORAGE_KEYS.AUTH_USER);
+    migrateStorageValue(STORAGE_KEYS.EXPIRES_AT, LEGACY_STORAGE_KEYS.EXPIRES_AT);
     const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     const rawUser = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
     const rawExpiresAt = localStorage.getItem(STORAGE_KEYS.EXPIRES_AT);
@@ -127,6 +139,14 @@ export class AuthService {
       return null;
     }
   }
+}
+
+function migrateStorageValue(nextKey: string, legacyKey: string): void {
+  if (localStorage.getItem(nextKey) !== null) return;
+  const legacyValue = localStorage.getItem(legacyKey);
+  if (legacyValue === null) return;
+  localStorage.setItem(nextKey, legacyValue);
+  localStorage.removeItem(legacyKey);
 }
 
 export function getAuthService(): AuthService {

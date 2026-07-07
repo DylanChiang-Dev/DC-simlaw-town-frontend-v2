@@ -141,8 +141,14 @@ assert.match(
 
 assert.match(
   appSource,
-  /const AUTO_NEXT_STORAGE_KEY = 'simlaw-town:auto-next-enabled';/,
+  /const AUTO_NEXT_STORAGE_KEY = 'legalworld:auto-next-enabled';/,
   'App should centralize the localStorage key for the auto-next preference.',
+);
+
+assert.match(
+  appSource,
+  /const LEGACY_AUTO_NEXT_STORAGE_KEY = 'simlaw-town:auto-next-enabled';/,
+  'App should keep the legacy auto-next preference key for one-time migration.',
 );
 
 assert.match(
@@ -153,8 +159,14 @@ assert.match(
 
 assert.match(
   appSource,
-  /function readAutoNextPreference\(\): boolean \{[\s\S]*localStorage\.getItem\(AUTO_NEXT_STORAGE_KEY\) === 'true'[\s\S]*return false;[\s\S]*\}/,
+  /function readAutoNextPreference\(\): boolean \{[\s\S]*migrateStorageValue\(AUTO_NEXT_STORAGE_KEY, LEGACY_AUTO_NEXT_STORAGE_KEY\)[\s\S]*localStorage\.getItem\(AUTO_NEXT_STORAGE_KEY\) === 'true'[\s\S]*return false;[\s\S]*\}/,
   'Auto-next should default to off when there is no stored local preference.',
+);
+
+assert.match(
+  appSource,
+  /function migrateStorageValue\([\s\S]*localStorage\.getItem\(nextKey\)[\s\S]*localStorage\.getItem\(legacyKey\)[\s\S]*localStorage\.setItem\(nextKey, legacyValue\)[\s\S]*localStorage\.removeItem\(legacyKey\)/,
+  'Auto-next should migrate an existing simlaw-town preference to the legalworld key and clear the legacy entry.',
 );
 
 assert.match(

@@ -65,6 +65,23 @@ const CASE_EVENT_MESSAGES: Record<string, string> = {
   CASE_CLOSED: '本案已结案。',
 };
 
+const CONFLICT_CHECK_RUNNING_MESSAGE = '接案前置流程：系统正在进行所内利益冲突检索……';
+const CONFLICT_CHECK_PASSED_MESSAGE = '利益冲突检索通过：未发现与本所在办案件存在当事人重合或利益冲突，可以接案。';
+
+// 庭前调解为纯前端演出：无论玩家是否接受，结局固定为调解不成立、转入一审庭审。
+export const PRETRIAL_MEDIATION_PROMPT = '开庭前，法庭依法组织双方进行庭前调解。是否接受调解？';
+export const PRETRIAL_MEDIATION_ACCEPTED_TEXT =
+  '你方表示愿意接受调解，但对方当事人明确拒绝，双方未能达成一致。调解不成立，案件转入一审庭审。';
+export const PRETRIAL_MEDIATION_REFUSED_TEXT =
+  '你方拒绝调解，对方当事人亦无调解意愿。调解不成立，案件转入一审庭审。';
+
+export function hasPretrialMediationRecord(history: DialogueHistoryEntry[]): boolean {
+  return history.some(
+    (entry) => entry.kind === 'system'
+      && (entry.text === PRETRIAL_MEDIATION_ACCEPTED_TEXT || entry.text === PRETRIAL_MEDIATION_REFUSED_TEXT),
+  );
+}
+
 const CASE_EVENT_STAGE_CODES: Record<string, string> = {
   PLAINTIFF_ARRIVED: 'PLC',
   DEFENDANT_ARRIVED: 'DLC',
@@ -89,6 +106,10 @@ const CASE_EVENT_STAGE_CODES: Record<string, string> = {
 };
 
 const DOCUMENT_SCENARIO_END_STAGES = new Set(['CD', 'DD', 'AD', 'AR']);
+
+// 前台导引只发生在案件正式流程开始前；一旦进入咨询、文书或庭审阶段，
+// 小镇 NPC 的前台环境对话（agent_update_dialogue）不得再劫持主线场景。
+const ENTRY_FLOW_STAGES = new Set(['SYSTEM', 'RECEPTION', 'LC']);
 
 export type VnRuntimeState = {
   background: DialogueHistoryEntry[];
@@ -142,6 +163,8 @@ export type VnRuntimeEvent =
   | { type: 'step-gate-accepted'; payload?: Record<string, unknown> }
   | { type: 'step-gate-error'; payload?: Record<string, unknown> }
   | { type: 'case-state-change'; payload?: Record<string, unknown> }
+  | { type: 'conflict-check-notice'; payload?: Record<string, unknown> }
+  | { type: 'pretrial-mediation-result'; payload: { accepted: boolean } }
   | { type: 'scenario-start'; payload?: Record<string, unknown> }
   | { type: 'scenario-end'; payload?: Record<string, unknown> }
   | { type: 'case-runtime-issue'; payload?: Record<string, unknown> }
@@ -309,6 +332,10 @@ export function vnEventReducer(state: VnRuntimeState, event: VnRuntimeEvent): Vn
       );
     case 'case-state-change':
       return appendSystemLine(state, getCaseStateMessage(event.payload || {}), getCaseStateStageCode(event.payload || {}));
+    case 'conflict-check-notice':
+      return applyConflictCheckNotice(state, event.payload || {});
+    case 'pretrial-mediation-result':
+      return applyPretrialMediationResult(state, event.payload.accepted);
     case 'scenario-start':
       return applyScenarioStart(state, event.payload || {});
     case 'scenario-end':
@@ -534,11 +561,14 @@ function updateRuntimeStatus(state: VnRuntimeState, patch: Partial<RuntimeStatus
 
 function applyDialogueUpdate(state: VnRuntimeState, payload: Record<string, unknown>): VnRuntimeState {
   const text = String(payload.content || payload.dialogue_text || '收到新的案件对话。');
+  if (isTownAgentDialoguePayload(payload) && !isEntryFlowStage(state.scene.stageCode)) {
+    return state;
+  }
   const caseId = String(payload.case_id || payload.caseId || state.scene.caseId || '').trim();
   const explicitStageCode = normalizeExplicitDialogueStageCode(payload.scenario_type || payload.stage);
   const fallbackStageCode = explicitStageCode || normalizeStageCode(state.scene.stageCode);
   const speaker = inferSpeaker(payload, fallbackStageCode, text);
-  const stageCode = !explicitStageCode && isReceptionPayload(payload, text)
+  const stageCode = !explicitStageCode && isEntryFlowStage(fallbackStageCode) && isReceptionPayload(payload, text)
     ? 'RECEPTION'
     : inferStageCodeForDialogue(explicitStageCode, fallbackStageCode);
   const scene = createSceneFromState(state.scene, {
@@ -704,6 +734,14 @@ function isBackgroundDialogue(stageCode: string, text: string): boolean {
   return false;
 }
 
+function isEntryFlowStage(stageCode: string): boolean {
+  return ENTRY_FLOW_STAGES.has(normalizeStageCode(stageCode));
+}
+
+function isTownAgentDialoguePayload(payload: Record<string, unknown>): boolean {
+  return String(payload.type || '') === 'agent_update_dialogue';
+}
+
 function isReceptionDialogueText(text: string): boolean {
   return isReceptionRecommendationText(text) || /前台|接待|欢迎来到本所/.test(text);
 }
@@ -723,9 +761,26 @@ function isReceptionPayload(payload: Record<string, unknown>, text: string): boo
     || isReceptionDialogueText(text);
 }
 
+function applyConflictCheckNotice(state: VnRuntimeState, payload: Record<string, unknown>): VnRuntimeState {
+  const message = payload.phase === 'passed' ? CONFLICT_CHECK_PASSED_MESSAGE : CONFLICT_CHECK_RUNNING_MESSAGE;
+  return appendSystemLine(state, message, getCaseStateStageCode(payload));
+}
+
+function applyPretrialMediationResult(state: VnRuntimeState, accepted: boolean): VnRuntimeState {
+  // appendHistory 只对相邻重复去重；重连/重放可能再次触发，这里按全历史去重。
+  if (hasPretrialMediationRecord(state.history)) {
+    return state;
+  }
+  const text = accepted ? PRETRIAL_MEDIATION_ACCEPTED_TEXT : PRETRIAL_MEDIATION_REFUSED_TEXT;
+  return appendSystemLine(state, text, 'CI');
+}
+
+export function getCaseEventName(payload: Record<string, unknown>): string {
+  return String(payload.event || payload.type || '').trim().toUpperCase();
+}
+
 function getCaseStateMessage(payload: Record<string, unknown>): string {
-  const eventName = String(payload.event || payload.type || '').trim().toUpperCase();
-  return CASE_EVENT_MESSAGES[eventName] || '案件流程正在推进，等待下一轮案件对话。';
+  return CASE_EVENT_MESSAGES[getCaseEventName(payload)] || '案件流程正在推进，等待下一轮案件对话。';
 }
 
 function getCaseStateStageCode(payload: Record<string, unknown>): string {
@@ -734,7 +789,7 @@ function getCaseStateStageCode(payload: Record<string, unknown>): string {
     return normalizeStageCode(explicitStage);
   }
 
-  const eventName = String(payload.event || payload.type || '').trim().toUpperCase();
+  const eventName = getCaseEventName(payload);
   const partyRole = String(payload.party_role || '').trim().toLowerCase();
   if (eventName === 'CASE_ASSIGNED' && partyRole === 'defendant') {
     return 'DLC';
@@ -875,7 +930,7 @@ function inferSpeaker(payload: Record<string, unknown>, stageCode: string, text:
     || value.includes('当事人')
     || value.includes('刘玉田')
   ) return caseArt.plaintiffKey;
-  if (stageCode === 'RECEPTION' || isReceptionPayload(payload, text)) {
+  if (stageCode === 'RECEPTION' || (isEntryFlowStage(stageCode) && isReceptionPayload(payload, text))) {
     return 'receptionist';
   }
   if (
@@ -934,7 +989,7 @@ function getDialogueSpeakerLabel(
   speaker: CharacterKey,
   text: string,
 ): string {
-  if (speaker === 'receptionist' || /推荐律师/.test(text)) {
+  if (speaker === 'receptionist' || (isEntryFlowStage(stageCode) && isReceptionRecommendationText(text))) {
     return '律所前台';
   }
   return String(payload.speaker_name || payload.speaker_id || characters[speaker].name).trim() || characters[speaker].name;

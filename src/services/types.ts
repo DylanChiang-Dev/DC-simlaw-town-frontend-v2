@@ -32,6 +32,13 @@ export type SimulationRuntimeError = {
 
 export type SandboxCaseStatus = 'idle' | 'running' | 'closed';
 
+export type PartyArtMeta = {
+  partyType: string;
+  gender: string;
+  birthYear: number | null;
+  hasRepresentative: boolean;
+};
+
 export type SandboxCaseSummary = {
   caseId: string;
   title: string;
@@ -41,6 +48,9 @@ export type SandboxCaseSummary = {
   trainingCategory: string;
   difficulty: string;
   status: SandboxCaseStatus;
+  isCustom: boolean;
+  plaintiffArt: PartyArtMeta;
+  defendantArt: PartyArtMeta;
 };
 
 export type AgentCapability = {
@@ -81,6 +91,8 @@ export type RuntimeTechCatalog = {
   };
 };
 
+export type SimulationMode = 'auto' | 'plaintiff';
+
 export type SimulationStatus = {
   status: string;
   sessionStatus: string;
@@ -95,6 +107,7 @@ export type SimulationStatus = {
   canRestart: boolean;
   lastError: SimulationRuntimeError | null;
   agentCapabilities: AgentCapability[];
+  simulationMode?: SimulationMode;
 };
 
 export type PlayerLawyerRequestStatus = 'pending' | 'submitted' | 'cancelled' | 'expired';

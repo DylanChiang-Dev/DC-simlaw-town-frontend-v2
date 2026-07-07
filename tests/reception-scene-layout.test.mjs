@@ -18,14 +18,14 @@ assert.match(
 
 assert.match(
   reducerSource,
-  /const stageCode = !explicitStageCode && isReceptionPayload\(payload, text\)\s*\?\s*'RECEPTION'/,
-  'Front desk dialogue should be classified as RECEPTION before falling back to the payload stage.',
+  /const stageCode = !explicitStageCode && isEntryFlowStage\(fallbackStageCode\) && isReceptionPayload\(payload, text\)\s*\?\s*'RECEPTION'/,
+  'Front desk dialogue should be classified as RECEPTION during the entry flow before falling back to the payload stage.',
 );
 
 assert.match(
   reducerSource,
-  /const explicitStageCode = normalizeExplicitDialogueStageCode\(payload\.scenario_type \|\| payload\.stage\);[\s\S]*const stageCode = !explicitStageCode && isReceptionPayload\(payload, text\)[\s\S]*\? 'RECEPTION'/,
-  'Reception inference should not override explicit LC/PLC/DLC dialogue stages.',
+  /const explicitStageCode = normalizeExplicitDialogueStageCode\(payload\.scenario_type \|\| payload\.stage\);[\s\S]*const stageCode = !explicitStageCode && isEntryFlowStage\(fallbackStageCode\) && isReceptionPayload\(payload, text\)[\s\S]*\? 'RECEPTION'/,
+  'Reception inference should not override explicit LC/PLC/DLC dialogue stages, nor hijack post-entry stages such as trials.',
 );
 
 assert.match(

@@ -5,7 +5,7 @@ import {
   restartSimulation,
   startSimulation,
 } from '../services/sandboxApi';
-import type { SandboxCaseSummary, SimulationStatus } from '../services/types';
+import type { SandboxCaseSummary, SimulationMode, SimulationStatus } from '../services/types';
 
 export type SimulationRuntimeState = {
   activeCaseId: string;
@@ -16,7 +16,7 @@ export type SimulationRuntimeState = {
   simulation: SimulationStatus | null;
   refresh: () => Promise<void>;
   selectCase: (caseId: string) => void;
-  startSelectedCase: (caseId?: string) => Promise<void>;
+  startSelectedCase: (caseId?: string, mode?: SimulationMode) => Promise<void>;
   restart: () => Promise<void>;
 };
 
@@ -105,14 +105,14 @@ export function useSimulationRuntime(enabled: boolean): SimulationRuntimeState {
     simulation,
     refresh,
     selectCase: setSelectedCaseId,
-    startSelectedCase: async (caseId?: string) => {
+    startSelectedCase: async (caseId?: string, mode?: SimulationMode) => {
       const nextCaseId = caseId || activeCaseId || selectedCaseId;
       if (activeCaseId && nextCaseId && activeCaseId !== nextCaseId) {
         await refresh();
         setError('当前已有其他案件在运行，请先继续当前案件或重置后再选择新案件');
         return;
       }
-      await runControl(() => startSimulation(nextCaseId || undefined));
+      await runControl(() => startSimulation(nextCaseId || undefined, mode));
     },
     restart: async () => {
       setLoading(true);

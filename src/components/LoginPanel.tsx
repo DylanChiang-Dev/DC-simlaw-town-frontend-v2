@@ -1,12 +1,6 @@
 import { FormEvent, useState } from 'react';
-import {
-  PROJECT_CONTACT_EMAIL,
-  PROJECT_INFO_COPY,
-  PROJECT_INFO_TITLE,
-  PROJECT_SURVEY_LABEL,
-} from '../config/projectInfo';
+import { PROJECT_CONTACT_EMAIL } from '../config/projectInfo';
 import { login, register } from '../services/apiClient';
-import { getSimulationSurveyUrl } from '../services/runtime';
 
 type Props = {
   onAuthenticated: () => Promise<void>;
@@ -21,6 +15,17 @@ const LOGIN_CASE_MEMORY_IMAGES = [
   '/art/vn/cg-case6-fabric-iou-evidence.png',
   '/art/vn/cg-case7-shanghai-traffic-accident-overview.png',
   '/art/vn/cg-case9-traffic-accident-overview.png',
+];
+
+const LOGIN_BRAND_LOGOS = [
+  {
+    alt: '上海创智学院',
+    src: '/art/brand/shanghai-innovation-institute-logo.png',
+  },
+  {
+    alt: '复旦大学数据智能与社会计算实验室',
+    src: '/art/brand/disc-logo.png',
+  },
 ];
 
 export function LoginPanel({ onAuthenticated }: Props) {
@@ -61,14 +66,6 @@ export function LoginPanel({ onAuthenticated }: Props) {
     setShowForgotPasswordNotice(false);
   }
 
-  function handleOpenSurvey(): void {
-    const surveyUrl = getSimulationSurveyUrl();
-    if (!surveyUrl) {
-      return;
-    }
-    globalThis.open?.(surveyUrl, '_blank', 'noopener,noreferrer');
-  }
-
   return (
     <main className="auth-shell">
       <section className="auth-stage" aria-label="登录 Legal World">
@@ -96,10 +93,20 @@ export function LoginPanel({ onAuthenticated }: Props) {
           </div>
         </div>
         <div className="auth-vignette" />
+        <section className="login-institution-brand" aria-label="联合机构">
+          <div className="login-institution-logos" aria-hidden="true">
+            {LOGIN_BRAND_LOGOS.map((logo) => (
+              <img alt="" key={logo.src} src={logo.src} />
+            ))}
+          </div>
+          <div>
+            <div className="panel-kicker">上海创智学院 × 复旦大学数据智能与社会计算实验室</div>
+          </div>
+        </section>
         <form className="login-panel" onSubmit={handleSubmit}>
-          <div className="panel-kicker">Legal World</div>
-          <h1>进入法律全流程仿真</h1>
-          <p>登录后进入案件工作区。你将以当前案件角色参与咨询、文书起草、庭审与上诉，案件进度、用户任务、智能助手协作和文书结果会实时同步。</p>
+          <h1>Legal World</h1>
+          <p className="login-product-subtitle">交互式的 AI 法律世界</p>
+          <p className="login-product-slogan">在完整案件流程中训练法律判断</p>
           <div className="login-mode-switch" aria-label="登录或注册">
             <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
               登录
@@ -108,16 +115,6 @@ export function LoginPanel({ onAuthenticated }: Props) {
               注册
             </button>
           </div>
-          <section className="login-project-card" aria-label={PROJECT_INFO_TITLE}>
-            <div className="login-project-title">{PROJECT_INFO_TITLE}</div>
-            <p>{PROJECT_INFO_COPY}</p>
-            <div className="login-project-actions">
-              <button className="login-project-button" onClick={handleOpenSurvey} type="button">
-                {PROJECT_SURVEY_LABEL}
-              </button>
-              <a href={`mailto:${PROJECT_CONTACT_EMAIL}`}>联系邮箱：{PROJECT_CONTACT_EMAIL}</a>
-            </div>
-          </section>
           <label>
             <span>邮箱</span>
             <input

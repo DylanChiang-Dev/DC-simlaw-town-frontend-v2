@@ -1,3 +1,4 @@
+import { resolvePortraitForKey } from '../data/caseArt';
 import { characters, type DialogueScene } from '../data/runtimeScene';
 
 type Props = {
@@ -14,12 +15,13 @@ export function VisualNovelStage({ scene }: Props) {
       <div className={`portrait-layer count-${visibleCharacters.length}`}>
         {visibleCharacters.map((key) => {
           const character = characters[key];
+          const portrait = resolvePortraitForKey(scene.caseId, key, character.portrait);
           const active = key === scene.speaker;
           const position = getSceneCharacterPosition(scene.stageCode, key, character.position);
           return (
             <img
               className={`character-portrait ${position} ${active ? 'active' : 'inactive'}`}
-              src={character.portrait}
+              src={portrait}
               alt={`${character.name} ${character.role}`}
               key={key}
             />
