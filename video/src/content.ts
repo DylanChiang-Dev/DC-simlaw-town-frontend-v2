@@ -30,8 +30,14 @@ export const ADVANTAGES: Advantage[] = [
   { title: '科研级框架', copy: '人类评估 · 演示录播 · 20+ 测试' },
 ];
 
-export const CTA_URL = 'chidaic.github.io/Legal-world';
+export const CTA_URL = 'www.fudan-disc.com/legalworld';
 export const INSTITUTION = '上海创智学院 × 复旦大学数据智能与社会计算实验室';
+
+// 片尾机构 logo（圆形徽章，含中英文名称，白底衬托）
+export const INSTITUTION_LOGOS = [
+  { src: 'brand/sii-logo.png', name: '上海创智学院' },
+  { src: 'brand/disc-logo.png', name: '复旦大学 DISC 实验室' },
+] as const;
 
 export const CLIPS = {
   casepicker: 'clips/clip-casepicker.mp4',
