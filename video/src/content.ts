@@ -37,4 +37,16 @@ export const CLIPS = {
   casepicker: 'clips/clip-casepicker.mp4',
   stage: 'clips/clip-stage.mp4',
   court: 'clips/clip-court.mp4',
+  trial: 'clips/clip-trial.mp4',
+  panel: 'clips/clip-panel.mp4',
+  radar: 'clips/clip-radar.mp4',
+} as const;
+
+// 旁白字幕（对齐豆包配音时间码；每个节拍一句）
+export const SUBTITLES = {
+  intro: '一个能让你亲自下场的 AI 法律世界',
+  lawyer: '从咨询、起诉到庭审、上诉，六个阶段亲自打完',
+  trial: '法官主持、对方律师应战，全部由 AI 驱动',
+  observable: '它调用了什么、记住了什么，全程透明可查',
+  outro: 'Legal World，开始体验',
 } as const;

@@ -122,6 +122,40 @@ export function LowerThird({
   );
 }
 
+// 顶部卖点标题条（配合底部字幕，避免上下文字打架）
+export function TopHeadline({
+  kicker,
+  title,
+  delay = 0,
+}: {
+  kicker: string;
+  title: string;
+  delay?: number;
+}) {
+  return (
+    <AbsoluteFill style={{ justifyContent: 'flex-start', padding: '76px 0 0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <FadeUp delay={delay}>
+          <Kicker style={{ fontSize: 24 }}>{kicker}</Kicker>
+        </FadeUp>
+        <FadeUp delay={delay + 5}>
+          <div
+            style={{
+              fontFamily: FONT_SERIF,
+              fontWeight: 900,
+              fontSize: 76,
+              color: COLORS.text,
+              textShadow: '0 4px 30px rgba(0,0,0,0.75)',
+            }}
+          >
+            {title}
+          </div>
+        </FadeUp>
+      </div>
+    </AbsoluteFill>
+  );
+}
+
 // 场景大标题（居中区块顶部用）
 export function SceneHeading({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
   return (
@@ -138,6 +172,40 @@ export function SceneHeading({ children, delay = 0 }: { children: ReactNode; del
         {children}
       </div>
     </FadeUp>
+  );
+}
+
+// 底部旁白字幕（承载旁白/配音文本，常驻底部居中）
+export function Subtitle({ text, delay = 8 }: { text: string; delay?: number }) {
+  const frame = useCurrentFrame();
+  const opacity = interpolate(frame, [delay, delay + 12], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+    easing: EASE,
+  });
+  return (
+    <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 54 }}>
+      <div
+        style={{
+          opacity,
+          maxWidth: 1500,
+          textAlign: 'center',
+          fontFamily: FONT_SANS,
+          fontWeight: 500,
+          fontSize: 42,
+          lineHeight: 1.3,
+          color: COLORS.text,
+          padding: '14px 40px',
+          borderRadius: 14,
+          background: 'rgba(10,6,3,0.62)',
+          backdropFilter: 'blur(2px)',
+          border: `1px solid ${COLORS.lineSoft}`,
+          textShadow: '0 2px 14px rgba(0,0,0,0.9)',
+        }}
+      >
+        {text}
+      </div>
+    </AbsoluteFill>
   );
 }
 

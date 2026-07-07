@@ -13,16 +13,15 @@ export const COLORS = {
 } as const;
 
 // 场景时间轴（帧 @30fps，共 1800 帧 = 60 秒）。相邻场景重叠 15 帧做交叉溶解。
+// v2 五节拍：开场 / 你即律师·全流程 / 多智能体对抗庭审 / 过程可观察 / CTA
 export const OVERLAP = 15;
 
 export const SCENES = {
-  intro: { from: 0, dur: 165 },
-  paradigm: { from: 150, dur: 255 },
-  flow: { from: 390, dur: 465 },
-  lawyer: { from: 840, dur: 315 },
-  observable: { from: 1140, dur: 285 },
-  advantage: { from: 1410, dur: 225 },
-  outro: { from: 1620, dur: 180 },
+  intro: { from: 0, dur: 195 },
+  lawyer: { from: 180, dur: 555 },
+  trial: { from: 720, dur: 495 },
+  observable: { from: 1200, dur: 375 },
+  outro: { from: 1560, dur: 240 },
 } as const;
 
 export const TOTAL_FRAMES = 1800;

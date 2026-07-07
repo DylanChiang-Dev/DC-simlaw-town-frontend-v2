@@ -1,9 +1,9 @@
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { KenBurnsClip } from '../components/Clip';
-import { FadeUp, Kicker, Vignette } from '../components/ui';
+import { FadeUp, Kicker, Subtitle, Vignette } from '../components/ui';
 import { COLORS, SCENES } from '../theme';
 import { FONT_SANS, FONT_SERIF } from '../fonts';
-import { BRAND, BRAND_SUB, CLIPS, EYEBROW } from '../content';
+import { BRAND, BRAND_SUB, CLIPS, EYEBROW, SUBTITLES } from '../content';
 import { fadeIn } from '../lib/anim';
 
 export function Scene01Intro() {
@@ -56,6 +56,7 @@ export function Scene01Intro() {
           </div>
         </FadeUp>
       </AbsoluteFill>
+      <Subtitle text={SUBTITLES.intro} delay={40} />
     </AbsoluteFill>
   );
 }

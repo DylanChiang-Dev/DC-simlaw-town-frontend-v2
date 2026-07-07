@@ -1,24 +1,21 @@
-import { AbsoluteFill } from 'remotion';
-import { RegionClip } from '../components/Clip';
-import { FadeUp, SceneHeading, Vignette } from '../components/ui';
+import { AbsoluteFill, OffthreadVideo, staticFile } from 'remotion';
+import { FadeUp, SceneHeading, Subtitle, Vignette } from '../components/ui';
 import { COLORS } from '../theme';
 import { FONT_SANS } from '../fonts';
-import { CLIPS } from '../content';
+import { CLIPS, SUBTITLES } from '../content';
 
-const BOX_W = 812;
-const BOX_H = 536;
-
-function Panel({
-  originX,
-  originY,
-  scale,
+// 精准裁切的面板/雷达特写卡片（原生分辨率，锐利）
+function Card({
+  src,
+  w,
+  h,
   caption,
   delay,
   trimBefore,
 }: {
-  originX: number;
-  originY: number;
-  scale: number;
+  src: string;
+  w: number;
+  h: number;
   caption: string;
   delay: number;
   trimBefore: number;
@@ -28,23 +25,22 @@ function Panel({
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22 }}>
         <div
           style={{
+            width: w,
+            height: h,
             borderRadius: 16,
-            border: `1px solid ${COLORS.line}`,
             overflow: 'hidden',
-            boxShadow: '0 26px 70px rgba(0,0,0,0.5)',
+            border: `1px solid ${COLORS.line}`,
+            boxShadow: '0 26px 70px rgba(0,0,0,0.55)',
           }}
         >
-          <RegionClip
-            src={CLIPS.stage}
+          <OffthreadVideo
+            src={staticFile(src)}
             trimBefore={trimBefore}
-            originX={originX}
-            originY={originY}
-            scale={scale}
-            boxW={BOX_W}
-            boxH={BOX_H}
+            muted
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </div>
-        <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: 32, color: COLORS.text }}>{caption}</div>
+        <div style={{ fontFamily: FONT_SANS, fontWeight: 700, fontSize: 30, color: COLORS.text }}>{caption}</div>
       </div>
     </FadeUp>
   );
@@ -53,37 +49,22 @@ function Panel({
 export function Scene05Observable() {
   return (
     <AbsoluteFill
-      style={{
-        background: `radial-gradient(circle at 50% 40%, ${COLORS.bgPanel}, ${COLORS.bgDeep})`,
-      }}
+      style={{ background: `radial-gradient(circle at 50% 38%, ${COLORS.bgPanel}, ${COLORS.bgDeep})` }}
     >
       <Vignette />
-      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <SceneHeading delay={2}>过程，可观察</SceneHeading>
-        <FadeUp delay={12} style={{ marginTop: 14, marginBottom: 52 }}>
-          <div style={{ fontFamily: FONT_SANS, fontSize: 30, color: COLORS.textMuted, letterSpacing: '0.08em' }}>
-            工具调用 · 技能记忆 · 空间雷达，全程可追踪
+      <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'flex-start', paddingTop: 92 }}>
+        <SceneHeading delay={2}>看得见的 AI</SceneHeading>
+        <FadeUp delay={12} style={{ marginTop: 12 }}>
+          <div style={{ fontFamily: FONT_SANS, fontSize: 28, color: COLORS.textMuted, letterSpacing: '0.08em' }}>
+            工具调用 · 法条检索 · 记忆写入，每一步都摊开给你看
           </div>
         </FadeUp>
-        <div style={{ display: 'flex', gap: 64 }}>
-          <Panel
-            originX={0.07}
-            originY={0.46}
-            scale={2.5}
-            caption="工具 · 技能 · 记忆"
-            delay={22}
-            trimBefore={120}
-          />
-          <Panel
-            originX={0.9}
-            originY={0.82}
-            scale={2.9}
-            caption="小镇雷达 · 空间化流程"
-            delay={34}
-            trimBefore={120}
-          />
+        <div style={{ display: 'flex', gap: 72, marginTop: 56, alignItems: 'flex-start' }}>
+          <Card src={CLIPS.panel} w={452} h={476} caption="工具 · 技能 · 记忆" delay={20} trimBefore={300} />
+          <Card src={CLIPS.radar} w={620} h={476} caption="小镇雷达 · 空间化流程" delay={30} trimBefore={270} />
         </div>
       </AbsoluteFill>
+      <Subtitle text={SUBTITLES.observable} delay={14} />
     </AbsoluteFill>
   );
 }
