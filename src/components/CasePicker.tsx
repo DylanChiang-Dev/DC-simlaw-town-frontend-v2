@@ -202,11 +202,11 @@ export function CasePicker({
                 type="button"
               >
                 <img
-                  className="case-card-preview"
-                  src={art.caseCg}
                   alt={`${item.title}案件预览`}
+                  className="case-card-preview"
                   decoding="async"
                   loading="lazy"
+                  src={art.caseCg}
                 />
                 <strong>{item.title}</strong>
                 <span>{item.plaintiffName} 诉 {item.defendantName}</span>

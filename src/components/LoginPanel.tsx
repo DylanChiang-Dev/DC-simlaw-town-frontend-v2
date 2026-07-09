@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { PROJECT_CONTACT_EMAIL } from '../config/projectInfo';
+import { LOGIN_DEVICE_NOTICE, LOGIN_ORGANIZATION_LABEL, PROJECT_CONTACT_EMAIL } from '../config/projectInfo';
 import { login, register } from '../services/apiClient';
 
 type Props = {
@@ -33,6 +33,7 @@ export function LoginPanel({ onAuthenticated }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [organization, setOrganization] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPasswordNotice, setShowForgotPasswordNotice] = useState(false);
@@ -47,7 +48,7 @@ export function LoginPanel({ onAuthenticated }: Props) {
     setError('');
     try {
       if (mode === 'register') {
-        await register(email.trim(), password);
+        await register(email.trim(), password, organization.trim());
       } else {
         await login(email.trim(), password);
       }
@@ -63,6 +64,7 @@ export function LoginPanel({ onAuthenticated }: Props) {
     setMode(nextMode);
     setError('');
     setConfirmPassword('');
+    setOrganization('');
     setShowForgotPasswordNotice(false);
   }
 
@@ -105,8 +107,7 @@ export function LoginPanel({ onAuthenticated }: Props) {
         </section>
         <form className="login-panel" onSubmit={handleSubmit}>
           <h1>Legal World</h1>
-          <p className="login-product-subtitle">交互式的 AI 法律世界</p>
-          <p className="login-product-slogan">在完整案件流程中训练法律判断</p>
+          <p className="login-device-notice">{LOGIN_DEVICE_NOTICE}</p>
           <div className="login-mode-switch" aria-label="登录或注册">
             <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
               登录
@@ -147,6 +148,19 @@ export function LoginPanel({ onAuthenticated }: Props) {
                 required
                 type="password"
                 value={confirmPassword}
+              />
+            </label>
+          )}
+          {mode === 'register' && (
+            <label>
+              <span>{LOGIN_ORGANIZATION_LABEL}</span>
+              <input
+                autoComplete="organization"
+                disabled={submitting}
+                onChange={(event) => setOrganization(event.target.value)}
+                required
+                type="text"
+                value={organization}
               />
             </label>
           )}

@@ -29,7 +29,7 @@ assert.match(
 
 assert.match(
   projectInfoSource,
-  /PROJECT_INFO_COPY[\s\S]*案件推演、全流程诉讼仿真、模拟法庭和法学训练[\s\S]*PROJECT_CONTACT_EMAIL/,
+  /PROJECT_INFO_COPY[\s\S]*案件推演、全流程诉讼仿真、模拟法庭、法学研究和法学实训[\s\S]*PROJECT_CONTACT_EMAIL/,
   'Project info copy should introduce the updated Legal World capability set and interpolate the contact email.',
 );
 
@@ -59,8 +59,14 @@ assert.match(
 
 assert.match(
   loginPanelSource,
-  /<h1>Legal World<\/h1>[\s\S]*交互式的 AI 法律世界[\s\S]*在完整案件流程中训练法律判断/,
-  'LoginPanel should render the Legal World title, subtitle, and slogan.',
+  /<h1>Legal World<\/h1>[\s\S]*login-device-notice/,
+  'LoginPanel should render the Legal World title and the device notice.',
+);
+
+assert.doesNotMatch(
+  loginPanelSource,
+  /login-product-subtitle|login-product-slogan/,
+  'LoginPanel should not render the retired product subtitle and slogan.',
 );
 
 assert.match(
@@ -71,8 +77,8 @@ assert.match(
 
 assert.match(
   loginPanelSource,
-  /import \{ PROJECT_CONTACT_EMAIL \} from '\.\.\/config\/projectInfo';/,
-  'LoginPanel should only import the contact email needed for the forgot-password notice.',
+  /import \{ LOGIN_DEVICE_NOTICE, LOGIN_ORGANIZATION_LABEL, PROJECT_CONTACT_EMAIL \} from '\.\.\/config\/projectInfo';/,
+  'LoginPanel should import the device notice, organization label, and the contact email needed for the forgot-password notice.',
 );
 
 assert.doesNotMatch(
@@ -137,14 +143,14 @@ assert.match(
 
 assert.match(
   loginPanelSource,
-  /AuthMode = 'login' \| 'register'[\s\S]*注册[\s\S]*确认密码[\s\S]*注册并进入案件/,
-  'LoginPanel should provide a register mode with confirm-password validation and a register submit button.',
+  /AuthMode = 'login' \| 'register'[\s\S]*注册[\s\S]*确认密码[\s\S]*LOGIN_ORGANIZATION_LABEL[\s\S]*注册并进入案件/,
+  'LoginPanel should provide a register mode with confirm-password and organization validation, and a register submit button.',
 );
 
 assert.match(
   loginPanelSource,
-  /register\(email\.trim\(\), password\)/,
-  'Register mode should call the frontend register API wrapper.',
+  /register\(email\.trim\(\), password, organization\.trim\(\)\)/,
+  'Register mode should call the frontend register API wrapper with the organization field.',
 );
 
 assert.doesNotMatch(
@@ -185,8 +191,8 @@ assert.match(
 
 assert.match(
   stylesSource,
-  /\.login-product-subtitle\s*\{[\s\S]*\.login-product-slogan\s*\{/,
-  'LoginPanel should style the product subtitle and slogan.',
+  /\.login-device-notice\s*\{/,
+  'LoginPanel should style the device notice.',
 );
 
 assert.doesNotMatch(

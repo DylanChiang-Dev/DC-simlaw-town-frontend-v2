@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+import { PublicMcpPage } from './components/mcp/PublicMcpPage';
 import { DemoApp } from './demo/DemoApp';
 import { HumanEvalApp } from './humanEval/HumanEvalApp';
 import { FrontendDemoApp } from './recording/FrontendDemoApp';
@@ -14,6 +15,8 @@ const RootApp = cleanPathname.endsWith('/human-eval')
   ? HumanEvalApp
   : cleanPathname.endsWith('/demo')
     ? DemoApp
+  : cleanPathname.endsWith('/mcp')
+    ? PublicMcpPage
   : recordingMode === 'frontend-demo'
   ? FrontendDemoApp
   : recordingMode === 'live-simulation'
@@ -22,6 +25,7 @@ const RootApp = cleanPathname.endsWith('/human-eval')
 
 document.body.classList.toggle('human-eval-route', cleanPathname.endsWith('/human-eval'));
 document.body.classList.toggle('demo-route', cleanPathname.endsWith('/demo'));
+document.body.classList.toggle('mcp-route', cleanPathname.endsWith('/mcp'));
 document.body.classList.toggle('recording-frontend-demo', recordingMode === 'frontend-demo');
 document.body.classList.toggle('recording-live-simulation', recordingMode === 'live-simulation');
 

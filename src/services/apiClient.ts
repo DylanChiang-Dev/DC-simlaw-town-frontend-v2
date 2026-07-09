@@ -90,16 +90,23 @@ export async function buildAuthenticatedWebSocketUrl(url: string = getWebSocketU
   return `${url}${separator}token=${encodeURIComponent(token)}`;
 }
 
-async function authenticate(path: '/api/auth/login' | '/api/auth/register', email: string, password: string) {
+async function authenticate(path: '/api/auth/login' | '/api/auth/register', body: Record<string, string>) {
   const response = await fetch(buildApiUrl(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify(body),
   });
   const payload = await readJsonResponse<{
     access_token?: string;
     expires_at?: string;
-    user?: { id?: string; email?: string; status?: string; token_version?: number; tokenVersion?: number };
+    user?: {
+      id?: string;
+      email?: string;
+      status?: string;
+      token_version?: number;
+      tokenVersion?: number;
+      organization?: string | null;
+    };
   }>(response);
   const session = getAuthService().saveTokenResponse(payload);
   if (!session) {
@@ -109,11 +116,11 @@ async function authenticate(path: '/api/auth/login' | '/api/auth/register', emai
 }
 
 export async function login(email: string, password: string) {
-  return await authenticate('/api/auth/login', email, password);
+  return await authenticate('/api/auth/login', { email, password });
 }
 
-export async function register(email: string, password: string) {
-  return await authenticate('/api/auth/register', email, password);
+export async function register(email: string, password: string, organization: string) {
+  return await authenticate('/api/auth/register', { email, password, organization });
 }
 
 export async function fetchCurrentUser() {

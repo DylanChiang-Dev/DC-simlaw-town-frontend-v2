@@ -2,12 +2,14 @@ import {
   LANDING_HERO_EYEBROW,
   LANDING_HERO_SUBTITLE,
   LANDING_HERO_TITLE,
+  LANDING_MCP_CTA,
   LANDING_PRIMARY_CTA,
   LANDING_PROJECT_URL,
   LANDING_SECONDARY_CTA,
 } from '../../config/projectInfo';
 
 const LANDING_HERO_BACKDROP = '/art/vn/bg-courtroom.png';
+const MCP_PAGE_HREF = `${import.meta.env.BASE_URL}mcp`;
 
 const LANDING_HERO_CAST = [
   {
@@ -44,6 +46,24 @@ export function LandingHero({ onStartExperience }: Props) {
           <button className="landing-primary-cta" onClick={onStartExperience} type="button">
             {LANDING_PRIMARY_CTA}
           </button>
+          <a className="landing-mcp-cta" href={MCP_PAGE_HREF}>
+            <svg
+              aria-hidden="true"
+              className="landing-mcp-cta-icon"
+              focusable="false"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M9 7 4 12l5 5M15 7l5 5-5 5M13 4l-2 16"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              />
+            </svg>
+            {LANDING_MCP_CTA}
+          </a>
           <a
             className="landing-secondary-cta"
             href={LANDING_PROJECT_URL}

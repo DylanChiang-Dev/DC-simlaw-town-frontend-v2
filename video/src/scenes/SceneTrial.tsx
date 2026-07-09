@@ -4,7 +4,7 @@ import { COLORS, OVERLAP, SCENES } from '../theme';
 import { CLIPS, SUBTITLES } from '../content';
 import { EASE } from '../lib/anim';
 
-const SHOT_A = 250; // 对方律师赵雪
+const SHOT_A = 165; // 对方律师赵雪
 const SCRIM = 'linear-gradient(180deg, rgba(10,6,3,0.5), transparent 20%, transparent 66%, rgba(10,6,3,0.72))';
 
 // clip-trial：对方律师赵雪约在 20s、法官刘正约在 35s

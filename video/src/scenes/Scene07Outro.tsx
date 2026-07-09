@@ -64,17 +64,30 @@ export function Scene07Outro() {
               letterSpacing: '0.06em',
             }}
           >
-            开始体验 · {CTA_URL}
+            在线体验 · {CTA_URL}
           </div>
         </FadeUp>
-        <FadeUp delay={34} style={{ marginTop: 60 }}>
+        <FadeUp delay={28} style={{ marginTop: 18 }}>
+          <div
+            style={{
+              fontFamily: FONT_SANS,
+              fontWeight: 700,
+              fontSize: 34,
+              color: COLORS.text,
+              letterSpacing: '0.04em',
+            }}
+          >
+            MCP 服务 · 接入你的法律智能体
+          </div>
+        </FadeUp>
+        <FadeUp delay={42} style={{ marginTop: 46 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 54 }}>
             {INSTITUTION_LOGOS.map((logo) => (
               <LogoBadge key={logo.src} src={logo.src} />
             ))}
           </div>
         </FadeUp>
-        <FadeUp delay={42} style={{ marginTop: 26 }}>
+        <FadeUp delay={50} style={{ marginTop: 24 }}>
           <div style={{ fontFamily: FONT_SANS, fontSize: 24, color: COLORS.textMuted, letterSpacing: '0.06em' }}>
             上海创智学院 · 复旦大学数据智能与社会计算实验室 联合出品
           </div>

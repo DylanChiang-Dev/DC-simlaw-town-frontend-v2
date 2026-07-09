@@ -38,7 +38,7 @@ assert.match(
 );
 assert.match(
   projectInfoSource,
-  /LANDING_HERO_SUBTITLE\s*=\s*'交互式法律世界'/,
+  /LANDING_HERO_SUBTITLE\s*=\s*'大规模、高保真的交互式法律世界'/,
   'projectInfo should define the hero subtitle.',
 );
 assert.doesNotMatch(
@@ -48,7 +48,7 @@ assert.doesNotMatch(
 );
 assert.match(
   projectInfoSource,
-  /LANDING_PRIMARY_CTA\s*=\s*'开始体验'/,
+  /LANDING_PRIMARY_CTA\s*=\s*'在线体验'/,
   'projectInfo should define the primary CTA label.',
 );
 assert.match(
@@ -63,14 +63,19 @@ assert.match(
 );
 assert.match(
   projectInfoSource,
-  /LANDING_CAPABILITIES[\s\S]*全生命周期[\s\S]*交互式训练[\s\S]*过程可观察/,
-  'projectInfo should define the three capability blocks.',
+  /LANDING_CAPABILITIES[\s\S]*案件推演[\s\S]*动态模拟案件发展、策略选择与结果演化。[\s\S]*人机对打[\s\S]*与 AI 法律智能体实时交锋，在对抗中检验推理、辩论与决策能力。[\s\S]*智能体训练[\s\S]*在复杂动态法律场景中，训练你的专属法律智能体。/,
+  'projectInfo should define the three capability blocks with approved copy.',
+);
+assert.match(
+  projectInfoSource,
+  /LANDING_CAPABILITIES_TITLE\s*=\s*'What can Legal World do\?'/,
+  'projectInfo should define the capabilities section title.',
 );
 
 // ---- projectInfo copy: expanded landing sections ----
 assert.match(
   projectInfoSource,
-  /LANDING_HERO_EYEBROW\s*=\s*'案件推演｜全流程诉讼仿真｜模拟法庭｜法学训练'/,
+  /LANDING_HERO_EYEBROW\s*=\s*'案件推演｜全流程诉讼仿真｜模拟法庭｜法学研究｜智能体训练'/,
   'projectInfo should define the hero eyebrow badge copy.',
 );
 assert.match(
@@ -137,8 +142,13 @@ assert.match(
 );
 assert.match(
   landingSource,
-  /<LandingHero onStartExperience=\{onStartExperience\}\s*\/>/,
+  /<LandingHero[\s\S]*onStartExperience=\{onStartExperience\}[\s\S]*\/>/,
   'PublicLandingPage should render the hero with the start callback.',
+);
+assert.doesNotMatch(
+  landingSource,
+  /onOpenMcp|isMcpOpen|LandingMcpModal/,
+  'PublicLandingPage should no longer host the MCP modal (MCP now lives on the standalone /mcp page).',
 );
 assert.match(
   landingSource,
@@ -147,7 +157,7 @@ assert.match(
 );
 assert.match(
   readFileSync(landingPagePath, 'utf8'),
-  /<LandingHero onStartExperience=\{onStartExperience\}\s*\/>\s*<LandingFlow\s*\/>\s*<LandingHeroVisual\s*\/>/,
+  /<LandingHero[\s\S]*\/>\s*<LandingFlow\s*\/>\s*<LandingHeroVisual\s*\/>/,
   'The litigation lifecycle section should appear before the first large courtroom image.',
 );
 assert.match(
@@ -410,8 +420,8 @@ assert.match(
 // ---- Landing styles ----
 assert.match(
   stylesSource,
-  /\.public-landing\s*\{[\s\S]*--lp-bg:\s*#050506/,
-  'The landing root should define the dark background token.',
+  /\.public-landing,\s*\.mcp-page\s*\{[\s\S]*--lp-bg:\s*#050506/,
+  'The landing root (shared with the /mcp page) should define the dark background token.',
 );
 assert.match(
   stylesSource,
@@ -505,8 +515,13 @@ assert.doesNotMatch(
 );
 assert.match(
   stylesSource,
-  /\.landing-primary-cta,\s*\.landing-secondary-cta\s*\{[\s\S]*display:\s*inline-flex[\s\S]*text-decoration:\s*none/,
+  /\.landing-primary-cta,\s*\.landing-mcp-cta,\s*\.landing-secondary-cta\s*\{[\s\S]*display:\s*inline-flex[\s\S]*text-decoration:\s*none/,
   'The hero CTA controls should align icon text and avoid link underlines.',
+);
+assert.doesNotMatch(
+  stylesSource,
+  /\.landing-mcp-overlay|\.landing-mcp-modal/,
+  'The retired MCP modal styles should leave no orphan rules after moving to the /mcp page.',
 );
 assert.match(
   stylesSource,
