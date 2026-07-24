@@ -2,7 +2,8 @@ import { AbsoluteFill, OffthreadVideo, staticFile } from 'remotion';
 import { FadeUp, SceneHeading, Subtitle, Vignette } from '../components/ui';
 import { COLORS } from '../theme';
 import { FONT_SANS } from '../fonts';
-import { CLIPS, SUBTITLES } from '../content';
+import { CLIPS } from '../content';
+import type { SceneProps } from '../Promo';
 
 // 精准裁切的面板/雷达特写卡片（原生分辨率，锐利）
 function Card({
@@ -46,7 +47,7 @@ function Card({
   );
 }
 
-export function Scene05Observable() {
+export function Scene05Observable({ promo }: SceneProps) {
   return (
     <AbsoluteFill
       style={{ background: `radial-gradient(circle at 50% 38%, ${COLORS.bgPanel}, ${COLORS.bgDeep})` }}
@@ -64,7 +65,7 @@ export function Scene05Observable() {
           <Card src={CLIPS.radar} w={620} h={476} caption="小镇雷达 · 空间化流程" delay={30} trimBefore={270} />
         </div>
       </AbsoluteFill>
-      <Subtitle text={SUBTITLES.observable} delay={14} />
+      <Subtitle text={promo.subtitles.observable} delay={14} />
     </AbsoluteFill>
   );
 }

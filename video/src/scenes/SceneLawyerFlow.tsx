@@ -1,10 +1,11 @@
 import { AbsoluteFill, interpolate, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from 'remotion';
 import { KenBurnsClip } from '../components/Clip';
 import { FadeUp, SceneHeading, Subtitle, TopHeadline, Vignette } from '../components/ui';
-import { COLORS, SCENES, OVERLAP } from '../theme';
+import { COLORS, OVERLAP } from '../theme';
 import { FONT_SANS, FONT_SERIF } from '../fonts';
-import { CLIPS, FLOW_STEPS, SUBTITLES } from '../content';
+import { CLIPS, FLOW_STEPS } from '../content';
 import { EASE, ramp } from '../lib/anim';
+import type { SceneProps } from '../Promo';
 
 const PHASE_A = 150; // 生命周期快闪
 const CHIP_START = 30;
@@ -102,16 +103,16 @@ function PhaseDraft() {
   );
 }
 
-export function SceneLawyerFlow() {
+export function SceneLawyerFlow({ promo }: SceneProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
       <Sequence durationInFrames={PHASE_A + OVERLAP} name="flow">
         <PhaseFlow />
       </Sequence>
-      <Sequence from={PHASE_A - OVERLAP} durationInFrames={SCENES.lawyer.dur - PHASE_A + OVERLAP} name="draft">
+      <Sequence from={PHASE_A - OVERLAP} durationInFrames={promo.scenes.lawyer.dur - PHASE_A + OVERLAP} name="draft">
         <PhaseDraft />
       </Sequence>
-      <Subtitle text={SUBTITLES.lawyer} delay={12} />
+      <Subtitle text={promo.subtitles.lawyer} delay={12} />
     </AbsoluteFill>
   );
 }

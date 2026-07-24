@@ -192,7 +192,7 @@ export function Subtitle({ text, delay = 8 }: { text: string; delay?: number }) 
           textAlign: 'center',
           fontFamily: FONT_SANS,
           fontWeight: 500,
-          fontSize: 42,
+          fontSize: 36,
           lineHeight: 1.3,
           color: COLORS.text,
           padding: '14px 40px',

@@ -1,9 +1,10 @@
 import { AbsoluteFill, Img, interpolate, staticFile, useCurrentFrame } from 'remotion';
 import { FadeUp, Vignette } from '../components/ui';
-import { COLORS, SCENES } from '../theme';
+import { COLORS } from '../theme';
 import { FONT_SANS, FONT_SERIF } from '../fonts';
 import { BRAND, CTA_URL, INSTITUTION_LOGOS } from '../content';
 import { EASE } from '../lib/anim';
+import type { SceneProps } from '../Promo';
 
 function LogoBadge({ src }: { src: string }) {
   return (
@@ -25,9 +26,9 @@ function LogoBadge({ src }: { src: string }) {
   );
 }
 
-export function Scene07Outro() {
+export function Scene07Outro({ promo }: SceneProps) {
   const frame = useCurrentFrame();
-  const fadeOut = interpolate(frame, [SCENES.outro.dur - 22, SCENES.outro.dur], [1, 0], {
+  const fadeOut = interpolate(frame, [promo.scenes.outro.dur - 22, promo.scenes.outro.dur], [1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
     easing: EASE,

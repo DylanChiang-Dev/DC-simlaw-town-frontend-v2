@@ -1,8 +1,9 @@
 import { AbsoluteFill, interpolate, OffthreadVideo, Sequence, staticFile, useCurrentFrame } from 'remotion';
 import { Subtitle, TopHeadline, Vignette } from '../components/ui';
-import { COLORS, OVERLAP, SCENES } from '../theme';
-import { CLIPS, SUBTITLES } from '../content';
+import { COLORS, OVERLAP } from '../theme';
+import { CLIPS } from '../content';
 import { EASE } from '../lib/anim';
+import type { SceneProps } from '../Promo';
 
 const SHOT_A = 165; // 对方律师赵雪
 const SCRIM = 'linear-gradient(180deg, rgba(10,6,3,0.5), transparent 20%, transparent 66%, rgba(10,6,3,0.72))';
@@ -31,17 +32,17 @@ function TrialShot({ trimBefore, fade }: { trimBefore: number; fade: boolean }) 
   );
 }
 
-export function SceneTrial() {
+export function SceneTrial({ promo }: SceneProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
       <Sequence durationInFrames={SHOT_A + OVERLAP} name="opponent">
         <TrialShot trimBefore={750} fade={false} />
       </Sequence>
-      <Sequence from={SHOT_A - OVERLAP} durationInFrames={SCENES.trial.dur - SHOT_A + OVERLAP} name="judge">
+      <Sequence from={SHOT_A - OVERLAP} durationInFrames={promo.scenes.trial.dur - SHOT_A + OVERLAP} name="judge">
         <TrialShot trimBefore={1680} fade />
       </Sequence>
       <TopHeadline kicker="法庭上，对手也是 AI" title="多智能体对抗庭审" delay={8} />
-      <Subtitle text={SUBTITLES.trial} delay={12} />
+      <Subtitle text={promo.subtitles.trial} delay={12} />
     </AbsoluteFill>
   );
 }

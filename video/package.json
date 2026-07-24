@@ -27,7 +27,8 @@
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
-    "lint": "eslint src && tsc"
+    "lint": "eslint src && tsc",
+    "voiceover:volcengine": "node scripts/generate-voiceover-volcengine.mjs"
   },
   "sideEffects": [
     "*.css"

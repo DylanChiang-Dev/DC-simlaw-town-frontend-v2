@@ -1,17 +1,18 @@
 import { AbsoluteFill } from 'remotion';
 import { KenBurnsClip } from '../components/Clip';
 import { FadeUp, Subtitle, Vignette } from '../components/ui';
-import { COLORS, SCENES } from '../theme';
+import { COLORS } from '../theme';
 import { FONT_SANS, FONT_SERIF } from '../fonts';
-import { CLIPS, SUBTITLES } from '../content';
+import { CLIPS } from '../content';
+import type { SceneProps } from '../Promo';
 
-export function Scene01Intro() {
+export function Scene01Intro({ promo }: SceneProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
       <KenBurnsClip
         src={CLIPS.trial}
         trimBefore={720}
-        durationInFrames={SCENES.intro.dur}
+        durationInFrames={promo.scenes.intro.dur}
         scaleFrom={1.05}
         scaleTo={1.14}
         blur={2}
@@ -53,7 +54,7 @@ export function Scene01Intro() {
           </div>
         </FadeUp>
       </AbsoluteFill>
-      <Subtitle text={SUBTITLES.intro} delay={22} />
+      <Subtitle text={promo.subtitles.intro} delay={22} />
     </AbsoluteFill>
   );
 }

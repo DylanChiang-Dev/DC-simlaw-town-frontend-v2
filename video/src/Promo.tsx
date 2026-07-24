@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { AbsoluteFill, interpolate, Sequence, useCurrentFrame } from 'remotion';
-import { COLORS, OVERLAP, SCENES } from './theme';
+import { AbsoluteFill, Audio, interpolate, Sequence, staticFile, useCurrentFrame } from 'remotion';
+import { COLORS, OVERLAP } from './theme';
 import { EASE } from './lib/anim';
+import { BGM_FILE, PROMO_VARIANTS, type PromoVariant } from './content';
 import { Scene01Intro } from './scenes/Scene01Intro';
 import { SceneStats } from './scenes/SceneStats';
 import { SceneLawyerFlow } from './scenes/SceneLawyerFlow';
@@ -22,25 +23,43 @@ function Dissolve({ children }: { children: ReactNode }) {
 }
 
 const ORDER = [
-  { key: 'intro', s: SCENES.intro, C: Scene01Intro },
-  { key: 'stats', s: SCENES.stats, C: SceneStats },
-  { key: 'lawyer', s: SCENES.lawyer, C: SceneLawyerFlow },
-  { key: 'trial', s: SCENES.trial, C: SceneTrial },
-  { key: 'observable', s: SCENES.observable, C: Scene05Observable },
-  { key: 'mcp', s: SCENES.mcp, C: SceneMcp },
-  { key: 'outro', s: SCENES.outro, C: Scene07Outro },
+  { key: 'intro', C: Scene01Intro },
+  { key: 'stats', C: SceneStats },
+  { key: 'lawyer', C: SceneLawyerFlow },
+  { key: 'trial', C: SceneTrial },
+  { key: 'observable', C: Scene05Observable },
+  { key: 'mcp', C: SceneMcp },
+  { key: 'outro', C: Scene07Outro },
 ] as const;
 
-export function Promo() {
+export function Promo({ variant = 'v5' }: { variant?: keyof typeof PROMO_VARIANTS }) {
+  const promo = PROMO_VARIANTS[variant];
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
-      {ORDER.map(({ key, s, C }) => (
+      <Audio
+        src={staticFile(BGM_FILE)}
+        volume={(frame) =>
+          interpolate(frame, [0, 45, promo.totalFrames - 75, promo.totalFrames - 1], [0, 0.11, 0.11, 0], {
+            extrapolateLeft: 'clamp',
+            extrapolateRight: 'clamp',
+          })
+        }
+      />
+      {ORDER.map(({ key, C }) => {
+        const s = promo.scenes[key];
+        return (
         <Sequence key={key} from={s.from} durationInFrames={s.dur} name={key}>
+          <Audio src={staticFile(promo.voiceoverFiles[key])} volume={0.95} />
           <Dissolve>
-            <C />
+            <C promo={promo} />
           </Dissolve>
         </Sequence>
-      ))}
+        );
+      })}
     </AbsoluteFill>
   );
 }
+
+export type SceneProps = {
+  promo: PromoVariant;
+};

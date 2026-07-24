@@ -1,8 +1,9 @@
 import { AbsoluteFill, OffthreadVideo, Sequence, staticFile } from 'remotion';
 import { FadeUp, SceneHeading, Subtitle, Vignette } from '../components/ui';
-import { COLORS, OVERLAP, SCENES } from '../theme';
+import { COLORS, OVERLAP } from '../theme';
 import { FONT_SANS, FONT_SERIF } from '../fonts';
-import { CLIPS, MCP_CAPABILITIES, MCP_STATS, SUBTITLES } from '../content';
+import { CLIPS, MCP_CAPABILITIES, MCP_STATS } from '../content';
+import type { SceneProps } from '../Promo';
 
 const SHOT_A = 95;
 const SHOT_B = 185;
@@ -148,7 +149,7 @@ function CapabilityShot() {
   );
 }
 
-export function SceneMcp() {
+export function SceneMcp({ promo }: SceneProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
       <Sequence durationInFrames={SHOT_A + OVERLAP} name="mcp-landing">
@@ -157,10 +158,10 @@ export function SceneMcp() {
       <Sequence from={SHOT_A - OVERLAP} durationInFrames={SHOT_B - SHOT_A + OVERLAP} name="mcp-stats">
         <StatsShot />
       </Sequence>
-      <Sequence from={SHOT_B - OVERLAP} durationInFrames={SCENES.mcp.dur - SHOT_B + OVERLAP} name="mcp-capabilities">
+      <Sequence from={SHOT_B - OVERLAP} durationInFrames={promo.scenes.mcp.dur - SHOT_B + OVERLAP} name="mcp-capabilities">
         <CapabilityShot />
       </Sequence>
-      <Subtitle text={SUBTITLES.mcp} delay={18} />
+      <Subtitle text={promo.subtitles.mcp} delay={18} />
     </AbsoluteFill>
   );
 }

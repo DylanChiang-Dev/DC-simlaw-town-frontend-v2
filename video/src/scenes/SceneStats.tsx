@@ -2,7 +2,8 @@ import { AbsoluteFill, OffthreadVideo, staticFile } from 'remotion';
 import { FadeUp, SceneHeading, Subtitle, Vignette } from '../components/ui';
 import { COLORS } from '../theme';
 import { FONT_SANS, FONT_SERIF } from '../fonts';
-import { CLIPS, MCP_STATS, SUBTITLES } from '../content';
+import { CLIPS, MCP_STATS } from '../content';
+import type { SceneProps } from '../Promo';
 
 function Stat({ value, label, delay }: { value: string; label: string; delay: number }) {
   return (
@@ -27,7 +28,7 @@ function Stat({ value, label, delay }: { value: string; label: string; delay: nu
   );
 }
 
-export function SceneStats() {
+export function SceneStats({ promo }: SceneProps) {
   return (
     <AbsoluteFill style={{ backgroundColor: COLORS.bgDeep }}>
       <OffthreadVideo
@@ -51,7 +52,7 @@ export function SceneStats() {
           ))}
         </div>
       </AbsoluteFill>
-      <Subtitle text={SUBTITLES.stats} delay={18} />
+      <Subtitle text={promo.subtitles.stats} delay={18} />
     </AbsoluteFill>
   );
 }
